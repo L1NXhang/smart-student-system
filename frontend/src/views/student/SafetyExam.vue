@@ -44,7 +44,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getExams, getExamQuestions, submitExam } from '@/api/safety'
+import { getExams, getExamQuestions, submitExam as submitExamApi } from '@/api/safety'
 
 const exams = ref([])
 const taking = ref(false)
@@ -82,7 +82,7 @@ async function submitExam() {
   clearInterval(timer)
   submitting.value = true
   try {
-    const res = await submitExam(currentExam.value.id, { answers: answers.value })
+    const res = await submitExamApi(currentExam.value.id, { answers: answers.value })
     result.value = res.data
     showResult.value = true
     taking.value = false
