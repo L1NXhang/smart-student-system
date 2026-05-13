@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth');
 const studentRoutes = require('./routes/student');
 const scholarshipRoutes = require('./routes/scholarship');
 const academicRoutes = require('./routes/academic');
+const careerRoutes = require('./routes/career');
 const adminRoutes = require('./routes/admin');
 const { error } = require('./utils/response');
 
@@ -29,6 +30,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/scholarship', scholarshipRoutes);
 app.use('/api/academic', academicRoutes);
+app.use('/api/career', careerRoutes);
 app.use('/api/admin', adminRoutes);
 
 // 健康检查

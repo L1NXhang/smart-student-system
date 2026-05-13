@@ -5,6 +5,7 @@ const path = require('path');
 const adminStudentController = require('../controllers/adminStudentController');
 const adminScholarshipController = require('../controllers/adminScholarshipController');
 const adminAcademicController = require('../controllers/adminAcademicController');
+const adminCareerController = require('../controllers/adminCareerController');
 const { authMiddleware, adminMiddleware } = require('../middlewares/auth');
 
 // 配置文件上传
@@ -88,5 +89,21 @@ router.get('/awards', adminAcademicController.getAwards);
 
 // 审核获奖记录
 router.put('/awards/:id', adminAcademicController.auditAward);
+
+// ===== 职业规划管理 =====
+// 获取就业指导预约列表
+router.get('/career-appointments', adminCareerController.getAppointments);
+
+// 确认预约
+router.put('/career-appointments/:id', adminCareerController.confirmAppointment);
+
+// 发布就业信息
+router.post('/job-infos', adminCareerController.createJobInfo);
+
+// 更新就业信息
+router.put('/job-infos/:id', adminCareerController.updateJobInfo);
+
+// 删除就业信息
+router.delete('/job-infos/:id', adminCareerController.deleteJobInfo);
 
 module.exports = router;
