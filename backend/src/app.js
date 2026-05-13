@@ -6,6 +6,8 @@ require('dotenv').config();
 
 const { sequelize } = require('./models');
 const authRoutes = require('./routes/auth');
+const studentRoutes = require('./routes/student');
+const adminRoutes = require('./routes/admin');
 const { error } = require('./utils/response');
 
 const app = express();
@@ -22,6 +24,8 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // 路由
 app.use('/api/auth', authRoutes);
+app.use('/api/student', studentRoutes);
+app.use('/api/admin', adminRoutes);
 
 // 健康检查
 app.get('/api/health', (req, res) => {
