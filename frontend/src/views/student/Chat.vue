@@ -238,7 +238,7 @@ onMounted(async () => {
   }
 
   // ─── WebSocket ───────────────────────────────────────────────
-  socket = io('/', {
+  socket = io('http://localhost:3000', {
     auth: { token: getToken() },
     transports: ['websocket', 'polling'],
   })

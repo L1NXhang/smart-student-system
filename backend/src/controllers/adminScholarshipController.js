@@ -209,6 +209,36 @@ const auditGrantApplication = async (req, res) => {
   }
 };
 
+// 获取勤工助学岗位列表（管理员）
+const getWorkStudyPositions = async (req, res) => {
+  try {
+    const { status, page = 1, pageSize = 10 } = req.query
+    let whereClause = '1=1'
+    const params = []
+    if (status !== undefined) { whereClause += ' AND status = ?'; params.push(+status) }
+    const countResult = await sequelize.query(
+      `SELECT COUNT(*) as total FROM work_study_positions WHERE ${whereClause}`,
+      { replacements: params, type: sequelize.QueryTypes.SELECT }
+    )
+    const total = countResult[0].total
+    const offset = (parseInt(page) - 1) * parseInt(pageSize)
+    const list = await sequelize.query(
+      `SELECT w.*, u.name as publisher_name,
+        (SELECT COUNT(*) FROM work_study_applications WHERE position_id = w.id AND status = 'approved') as hired_count,
+        (SELECT COUNT(*) FROM work_study_applications WHERE position_id = w.id) as apply_count
+       FROM work_study_positions w
+       LEFT JOIN users u ON w.publisher_id = u.id
+       WHERE ${whereClause}
+       ORDER BY w.created_at DESC LIMIT ? OFFSET ?`,
+      { replacements: [...params, parseInt(pageSize), offset], type: sequelize.QueryTypes.SELECT }
+    )
+    return paginate(res, list, total, parseInt(page), parseInt(pageSize))
+  } catch (err) {
+    console.error('获取岗位列表错误:', err)
+    return error(res, '获取岗位列表失败', 500)
+  }
+}
+
 // 发布勤工助学岗位
 const createWorkStudyPosition = async (req, res) => {
   try {
@@ -388,6 +418,7 @@ module.exports = {
   auditScholarshipApplication,
   getGrantApplications,
   auditGrantApplication,
+  getWorkStudyPositions,
   createWorkStudyPosition,
   updateWorkStudyPosition,
   getWorkStudyApplications,

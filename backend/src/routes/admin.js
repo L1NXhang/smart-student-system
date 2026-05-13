@@ -59,6 +59,9 @@ router.get('/grant-applications', adminScholarshipController.getGrantApplication
 // 审核助学金申请
 router.put('/grant-applications/:id', adminScholarshipController.auditGrantApplication);
 
+// 获取勤工助学岗位列表（管理员）
+router.get('/work-study/positions', adminScholarshipController.getWorkStudyPositions);
+
 // 发布勤工助学岗位
 router.post('/work-study/positions', adminScholarshipController.createWorkStudyPosition);
 
