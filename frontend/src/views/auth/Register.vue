@@ -171,7 +171,7 @@ async function handleRegister() {
       phone: form.phone,
     })
     ElMessage.success('注册成功，请等待审核')
-    ElMessage.info('注册成功，请等待管理员审核'); router.push('/login')
+    router.push('/login')
   } catch (err) {
     const msg = err?.response?.data?.message || err?.message || '注册失败，请稍后重试'
     ElMessage.error(msg)
@@ -182,14 +182,12 @@ async function handleRegister() {
 }
 
 onMounted(() => {
-  // Card slides up + fades in
   gsap.fromTo(
     cardRef.value,
     { y: 30, opacity: 0 },
     { y: 0, opacity: 1, duration: 0.6, ease: 'power3.out' }
   )
 
-  // Form items stagger in from left
   gsap.fromTo(
     Object.values(itemRefs),
     { x: -20, opacity: 0 },
@@ -202,17 +200,6 @@ onMounted(() => {
       delay: 0.3,
     }
   )
-
-  // Button hover: slight scale up
-  if (registerBtnRef.value) {
-    const btnEl = registerBtnRef.value.$el || registerBtnRef.value
-    btnEl.addEventListener('mouseenter', () => {
-      gsap.to(btnEl, { scale: 1.02, duration: 0.2, ease: 'power2.out' })
-    })
-    btnEl.addEventListener('mouseleave', () => {
-      gsap.to(btnEl, { scale: 1, duration: 0.2, ease: 'power2.out' })
-    })
-  }
 })
 </script>
 

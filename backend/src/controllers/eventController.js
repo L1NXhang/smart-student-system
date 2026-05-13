@@ -6,7 +6,7 @@ exports.getEvents = async (req, res) => {
     const { eventType, status, page = 1, pageSize = 10 } = req.query
     const where = {}
     if (eventType) where.event_type = eventType
-    if (status !== undefined) where.status = +status
+    if (status !== undefined && !isNaN(+status)) where.status = +status
     else where.status = 1
     const { count, rows } = await Event.findAndCountAll({
       where, offset: (page - 1) * pageSize, limit: +pageSize,
