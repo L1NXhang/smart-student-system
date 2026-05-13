@@ -9,17 +9,17 @@ export function applyScholarship(data) {
 }
 
 export function getWorkStudyPositions(params) {
-  return api.get('/work-study/positions', { params })
+  return api.get('/scholarship/work-study/positions', { params })
 }
 
 export function getWorkStudyPosition(id) {
-  return api.get(`/work-study/positions/${id}`)
+  return api.get(`/scholarship/work-study/positions/${id}`)
 }
 
 export function applyWorkStudy(data) {
-  return api.post('/work-study/applications', data)
+  return api.post('/scholarship/work-study/applications', data)
 }
 
 export function getMyWorkStudyApplications() {
-  return api.get('/work-study/applications')
+  return api.get('/scholarship/work-study/applications')
 }
