@@ -15,6 +15,11 @@ const routes = [
     meta: { guest: true },
   },
   {
+    path: '/change-password',
+    name: 'ChangePassword',
+    component: () => import('../views/auth/ChangePassword.vue'),
+  },
+  {
     path: '/',
     component: () => import('../components/Layout/index.vue'),
     redirect: '/dashboard',

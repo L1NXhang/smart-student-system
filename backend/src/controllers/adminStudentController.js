@@ -346,6 +346,50 @@ const auditDifficultyApplication = async (req, res) => {
   }
 };
 
+// 批量导入学生
+const importStudents = async (req, res) => {
+  try {
+    const students = req.body.students
+    if (!students || !students.length) return error(res, '请提供学生数据', 400)
+    const bcrypt = require('bcryptjs')
+    const defaultPassword = bcrypt.hashSync('123456', 10)
+    let imported = 0
+
+    for (const s of students) {
+      try {
+        const [user, created] = await User.findOrCreate({
+          where: { username: s.username || s.studentId },
+          defaults: {
+            username: s.username || s.studentId,
+            password: defaultPassword,
+            name: s.name,
+            role: 'student',
+            status: 1,
+          },
+        })
+        if (created || (user)) {
+          const userId = user.id
+          const existing = await sequelize.query('SELECT id FROM student_info WHERE user_id = ?', {
+            replacements: [userId], type: sequelize.QueryTypes.SELECT,
+          })
+          if (!existing.length) {
+            await sequelize.query(
+              `INSERT INTO student_info (user_id, college, major, grade, class_name, phone, campus)
+               VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              { replacements: [userId, s.college, s.major, s.grade, s.className || s.class, s.phone || '', s.campus || '华凤校区'], type: sequelize.QueryTypes.INSERT }
+            )
+          }
+          imported++
+        }
+      } catch (e) { /* skip duplicates */ }
+    }
+    return success(res, { imported, total: students.length }, `成功导入 ${imported} 名学生`)
+  } catch (err) {
+    console.error('批量导入错误:', err)
+    return error(res, '批量导入失败', 500)
+  }
+}
+
 module.exports = {
   getStudentList,
   getStudentDetail,
@@ -353,5 +397,6 @@ module.exports = {
   getInfoChangeRequests,
   auditInfoChangeRequest,
   getDifficultyApplications,
-  auditDifficultyApplication
+  auditDifficultyApplication,
+  importStudents,
 };

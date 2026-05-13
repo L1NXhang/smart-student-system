@@ -66,6 +66,21 @@
                   show-password
                   size="large"
                 />
+                <!-- Password strength indicator (only for password, not confirmPassword) -->
+                <div
+                  v-if="item.prop === 'password' && form.password.length > 0"
+                  class="password-strength"
+                >
+                  <div class="strength-bars">
+                    <span
+                      v-for="level in 3"
+                      :key="level"
+                      class="strength-bar"
+                      :class="strengthBarClass(level)"
+                    ></span>
+                  </div>
+                  <span class="strength-text" :class="strengthTextClass">{{ strengthLabel }}</span>
+                </div>
               </el-form-item>
 
               <el-form-item v-else-if="item.type === 'button'">
@@ -93,7 +108,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, h } from 'vue'
+import { ref, reactive, onMounted, computed, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { gsap } from 'gsap'
 import { ElMessage } from 'element-plus'
@@ -117,6 +132,25 @@ const form = reactive({
   confirmPassword: '',
 })
 
+// ---- Password strength validation ----
+const validatePassword = (_rule, value, callback) => {
+  if (!value) {
+    callback(new Error('请输入密码'))
+    return
+  }
+  if (value.length < 8) {
+    callback(new Error('密码长度不能少于8位'))
+    return
+  }
+  const hasLetter = /[a-zA-Z]/.test(value)
+  const hasDigit = /\d/.test(value)
+  if (!hasLetter || !hasDigit) {
+    callback(new Error('密码必须包含字母和数字'))
+    return
+  }
+  callback()
+}
+
 const validateConfirmPassword = (_rule, value, callback) => {
   if (!value) {
     callback(new Error('请再次输入密码'))
@@ -131,10 +165,7 @@ const rules = {
   name:            [{ required: true, message: '请输入姓名', trigger: 'blur' }],
   username:        [{ required: true, message: '请输入学号', trigger: 'blur' }],
   phone:           [{ required: true, message: '请输入联系方式', trigger: 'blur' }],
-  password:        [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' },
-  ],
+  password:        [{ required: true, validator: validatePassword, trigger: 'blur' }],
   confirmPassword: [{ required: true, validator: validateConfirmPassword, trigger: 'blur' }],
 }
 
@@ -146,6 +177,35 @@ const formItems = [
   { type: 'password', prop: 'confirmPassword', placeholder: '确认密码', icon: h(Lock) },
   { type: 'button',   prop: 'submit' },
 ]
+
+// ---- Password strength computation ----
+const strengthLevel = computed(() => {
+  const pwd = form.password || ''
+  if (pwd.length === 0) return 0
+  let score = 0
+  if (pwd.length >= 8) score++
+  if (/[a-zA-Z]/.test(pwd)) score++
+  if (/\d/.test(pwd)) score++
+  if (/[^a-zA-Z0-9]/.test(pwd)) score++
+  if (pwd.length >= 12) score++
+  return Math.min(score, 3)
+})
+
+const strengthLabel = computed(() => {
+  const labels = ['', '弱', '中', '强']
+  return labels[strengthLevel.value] || ''
+})
+
+const strengthTextClass = computed(() => {
+  return `text-${['', 'weak', 'medium', 'strong'][strengthLevel.value] || ''}`
+})
+
+function strengthBarClass(level) {
+  if (strengthLevel.value >= level) {
+    return ['bar-weak', 'bar-medium', 'bar-strong'][level - 1]
+  }
+  return ''
+}
 
 function shakeInput() {
   const inputs = document.querySelectorAll('.auth-form .el-input')
@@ -170,7 +230,7 @@ async function handleRegister() {
       name: form.name,
       phone: form.phone,
     })
-    ElMessage.success('注册成功，请等待审核')
+    ElMessage.success('注册成功，请登录')
     router.push('/login')
   } catch (err) {
     const msg = err?.response?.data?.message || err?.message || '注册失败，请稍后重试'
@@ -362,6 +422,59 @@ onMounted(() => {
 
 .auth-form :deep(.el-input__wrapper.is-focus) {
   box-shadow: 0 0 0 2px #3b82f6 inset;
+}
+
+/* ---- Password Strength ---- */
+.password-strength {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.strength-bars {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.strength-bar {
+  height: 4px;
+  flex: 1;
+  border-radius: 2px;
+  background: #e5e7eb;
+  transition: background 0.3s;
+}
+
+.strength-bar.bar-weak {
+  background: #ef4444;
+}
+
+.strength-bar.bar-medium {
+  background: #f59e0b;
+}
+
+.strength-bar.bar-strong {
+  background: #10b981;
+}
+
+.strength-text {
+  font-size: 11px;
+  font-weight: 500;
+  min-width: 20px;
+  text-align: right;
+}
+
+.strength-text.text-weak {
+  color: #ef4444;
+}
+
+.strength-text.text-medium {
+  color: #f59e0b;
+}
+
+.strength-text.text-strong {
+  color: #10b981;
 }
 
 .register-btn {

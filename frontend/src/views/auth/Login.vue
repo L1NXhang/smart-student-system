@@ -80,6 +80,7 @@
                   type="primary"
                   size="large"
                   :loading="loading"
+                  :disabled="loading || !captchaPassed"
                   class="login-btn"
                   @click="handleLogin"
                 >
@@ -88,6 +89,31 @@
               </el-form-item>
             </div>
           </el-form>
+
+          <!-- Slider Captcha -->
+          <div class="captcha-section" ref="captchaRef">
+            <p class="captcha-label">安全验证</p>
+            <div
+              class="captcha-track"
+              ref="trackRef"
+              @mousedown="onDragStart"
+              @touchstart.prevent="onDragStart"
+            >
+              <div class="captcha-track-bg" :style="{ width: captchaProgress + '%' }"></div>
+              <div
+                class="captcha-slider"
+                ref="sliderRef"
+                :style="{ left: sliderLeft + 'px' }"
+                @mousedown.stop="onDragStart"
+                @touchstart.stop.prevent="onDragStart"
+              >
+                <span v-if="captchaPassed" class="captcha-check">&#10003;</span>
+                <span v-else class="captcha-arrow">&rarr;</span>
+              </div>
+              <span class="captcha-hint" v-if="!captchaPassed">请按住滑块拖动到最右边</span>
+              <span class="captcha-hint success" v-else>验证通过</span>
+            </div>
+          </div>
 
           <div class="auth-link">
             还没有账号？<router-link to="/register">立即注册</router-link>
@@ -99,7 +125,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, h } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, h, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { gsap } from 'gsap'
 import { ElMessage } from 'element-plus'
@@ -115,6 +141,18 @@ const formRef = ref(null)
 const itemRefs = reactive({})
 const loading = ref(false)
 
+// ---- Slider captcha state ----
+const captchaRef = ref(null)
+const trackRef = ref(null)
+const sliderRef = ref(null)
+const captchaPassed = ref(false)
+const sliderLeft = ref(0)
+const captchaProgress = ref(0)
+let isDragging = false
+let trackWidth = 300
+let sliderWidth = 40
+let maxLeft = trackWidth - sliderWidth
+
 const form = reactive({
   username: '',
   password: '',
@@ -123,7 +161,10 @@ const form = reactive({
 
 const rules = {
   username: [{ required: true, message: '请输入学号/工号', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' },
+  ],
 }
 
 const formItems = [
@@ -133,6 +174,75 @@ const formItems = [
   { type: 'button',   prop: 'submit' },
 ]
 
+// ---- Slider captcha logic ----
+function onDragStart(e) {
+  if (captchaPassed.value) return
+  isDragging = true
+
+  if (trackRef.value) {
+    trackWidth = trackRef.value.clientWidth
+  }
+  sliderWidth = 40
+  maxLeft = trackWidth - sliderWidth
+
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX
+  const trackRect = trackRef.value.getBoundingClientRect()
+  const startLeft = clientX - trackRect.left - sliderWidth / 2
+  sliderLeft.value = Math.max(0, Math.min(startLeft, maxLeft))
+
+  window.addEventListener('mousemove', onDragging)
+  window.addEventListener('mouseup', onDragEnd)
+  window.addEventListener('touchmove', onDragging, { passive: false })
+  window.addEventListener('touchend', onDragEnd)
+}
+
+function onDragging(e) {
+  if (!isDragging) return
+  e.preventDefault()
+
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX
+  const trackRect = trackRef.value.getBoundingClientRect()
+  const newLeft = clientX - trackRect.left - sliderWidth / 2
+
+  sliderLeft.value = Math.max(0, Math.min(newLeft, maxLeft))
+  captchaProgress.value = (sliderLeft.value / maxLeft) * 100
+}
+
+function onDragEnd() {
+  if (!isDragging) return
+  isDragging = false
+
+  window.removeEventListener('mousemove', onDragging)
+  window.removeEventListener('mouseup', onDragEnd)
+  window.removeEventListener('touchmove', onDragging)
+  window.removeEventListener('touchend', onDragEnd)
+
+  if (sliderLeft.value >= maxLeft - 5) {
+    // Successfully dragged to the end
+    sliderLeft.value = maxLeft
+    captchaProgress.value = 100
+    captchaPassed.value = true
+  } else {
+    // Snap back to start with animation
+    gsap.to(sliderRef.value, {
+      left: 0,
+      duration: 0.4,
+      ease: 'power2.out',
+      onUpdate: () => {
+        const el = sliderRef.value
+        if (el) {
+          sliderLeft.value = parseFloat(el.style.left) || 0
+          captchaProgress.value = (sliderLeft.value / maxLeft) * 100
+        }
+      },
+      onComplete: () => {
+        sliderLeft.value = 0
+        captchaProgress.value = 0
+      },
+    })
+  }
+}
+
 function shakeInput() {
   const inputs = document.querySelectorAll('.auth-form .el-input')
   inputs.forEach(el => {
@@ -141,6 +251,11 @@ function shakeInput() {
 }
 
 async function handleLogin() {
+  if (!captchaPassed.value) {
+    ElMessage.warning('请先完成安全验证')
+    return
+  }
+
   if (!formRef.value) return
   try {
     await formRef.value.validate()
@@ -150,7 +265,11 @@ async function handleLogin() {
 
   loading.value = true
   try {
-    await store.login(form.username, form.password)
+    const result = await store.login(form.username, form.password)
+    if (result.needChangePassword) {
+      router.push('/change-password')
+      return
+    }
     ElMessage.success('登录成功')
     if (store.isAdmin) { router.push('/admin/dashboard') } else { router.push('/dashboard') }
   } catch (err) {
@@ -171,31 +290,52 @@ onMounted(() => {
   )
 
   // Form items stagger in from left
-  gsap.fromTo(
-    Object.values(itemRefs),
-    { x: -20, opacity: 0 },
-    {
-      x: 0,
-      opacity: 1,
-      duration: 0.4,
-      stagger: 0.1,
-      ease: 'power2.out',
-      delay: 0.3,
+  nextTick(() => {
+    const refs = Object.values(itemRefs).filter(Boolean)
+    if (refs.length) {
+      gsap.fromTo(
+        refs,
+        { x: -20, opacity: 0 },
+        {
+          x: 0,
+          opacity: 1,
+          duration: 0.4,
+          stagger: 0.1,
+          ease: 'power2.out',
+          delay: 0.3,
+        }
+      )
     }
-  )
+  })
+
+  // Captcha fades in
+  if (captchaRef.value) {
+    gsap.fromTo(
+      captchaRef.value,
+      { opacity: 0, y: 10 },
+      { opacity: 1, y: 0, duration: 0.4, delay: 0.8, ease: 'power2.out' }
+    )
+  }
 
   // Button hover: slight scale up
   if (loginBtnRef.value) {
-	    const btnEl = loginBtnRef.value.$el || loginBtnRef.value
-	    if (btnEl && btnEl.addEventListener) {
-	      btnEl.addEventListener('mouseenter', () => {
-	        gsap.to(btnEl, { scale: 1.02, duration: 0.2, ease: 'power2.out' })
-	      })
-	      btnEl.addEventListener('mouseleave', () => {
-	        gsap.to(btnEl, { scale: 1, duration: 0.2, ease: 'power2.out' })
-	      })
-	    }
+    const btnEl = loginBtnRef.value.$el || loginBtnRef.value
+    if (btnEl && btnEl.addEventListener) {
+      btnEl.addEventListener('mouseenter', () => {
+        gsap.to(btnEl, { scale: 1.02, duration: 0.2, ease: 'power2.out' })
+      })
+      btnEl.addEventListener('mouseleave', () => {
+        gsap.to(btnEl, { scale: 1, duration: 0.2, ease: 'power2.out' })
+      })
+    }
   }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('mousemove', onDragging)
+  window.removeEventListener('mouseup', onDragEnd)
+  window.removeEventListener('touchmove', onDragging)
+  window.removeEventListener('touchend', onDragEnd)
 })
 </script>
 
@@ -366,6 +506,89 @@ onMounted(() => {
   font-size: 15px;
   letter-spacing: 4px;
   height: 44px;
+}
+
+/* ---- Slider Captcha ---- */
+.captcha-section {
+  max-width: 300px;
+  margin: 0 auto 8px;
+}
+
+.captcha-label {
+  font-size: 12px;
+  color: #9ca3af;
+  margin: 0 0 6px;
+  text-align: center;
+}
+
+.captcha-track {
+  position: relative;
+  width: 100%;
+  height: 40px;
+  background: #f3f4f6;
+  border-radius: 20px;
+  overflow: hidden;
+  user-select: none;
+  cursor: pointer;
+  border: 1px solid #e5e7eb;
+}
+
+.captcha-track-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #a7f3d0, #34d399);
+  border-radius: 20px 0 0 20px;
+  transition: width 0.05s linear;
+}
+
+.captcha-slider {
+  position: absolute;
+  top: 0;
+  width: 40px;
+  height: 40px;
+  background: #fff;
+  border: 2px solid #d1d5db;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  z-index: 2;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  transition: border-color 0.3s, background 0.3s;
+}
+
+.captcha-slider:active {
+  cursor: grabbing;
+}
+
+.captcha-arrow {
+  font-size: 18px;
+  color: #9ca3af;
+  font-weight: bold;
+}
+
+.captcha-check {
+  font-size: 18px;
+  color: #10b981;
+  font-weight: bold;
+}
+
+.captcha-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 12px;
+  color: #9ca3af;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.captcha-hint.success {
+  color: #10b981;
 }
 
 .auth-link {

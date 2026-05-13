@@ -25,6 +25,9 @@ const upload = multer({ storage });
 router.use(authMiddleware, adminMiddleware);
 
 // ===== 学生管理 =====
+// 批量导入学生
+router.post('/students/import', adminStudentController.importStudents);
+
 // 获取学生列表
 router.get('/students', adminStudentController.getStudentList);
 
