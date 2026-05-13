@@ -152,7 +152,7 @@ async function handleLogin() {
   try {
     await store.login(form.username, form.password)
     ElMessage.success('登录成功')
-    router.push('/dashboard')
+    if (store.isAdmin) { router.push('/admin/dashboard') } else { router.push('/dashboard') }
   } catch (err) {
     const msg = err?.response?.data?.message || err?.message || '登录失败，请检查账号和密码'
     ElMessage.error(msg)
@@ -186,13 +186,15 @@ onMounted(() => {
 
   // Button hover: slight scale up
   if (loginBtnRef.value) {
-    const btnEl = loginBtnRef.value.$el || loginBtnRef.value
-    btnEl.addEventListener('mouseenter', () => {
-      gsap.to(btnEl, { scale: 1.02, duration: 0.2, ease: 'power2.out' })
-    })
-    btnEl.addEventListener('mouseleave', () => {
-      gsap.to(btnEl, { scale: 1, duration: 0.2, ease: 'power2.out' })
-    })
+	    const btnEl = loginBtnRef.value.$el || loginBtnRef.value
+	    if (btnEl && btnEl.addEventListener) {
+	      btnEl.addEventListener('mouseenter', () => {
+	        gsap.to(btnEl, { scale: 1.02, duration: 0.2, ease: 'power2.out' })
+	      })
+	      btnEl.addEventListener('mouseleave', () => {
+	        gsap.to(btnEl, { scale: 1, duration: 0.2, ease: 'power2.out' })
+	      })
+	    }
   }
 })
 </script>

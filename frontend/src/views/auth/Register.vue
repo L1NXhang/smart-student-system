@@ -171,7 +171,7 @@ async function handleRegister() {
       phone: form.phone,
     })
     ElMessage.success('注册成功，请等待审核')
-    router.push('/login')
+    ElMessage.info('注册成功，请等待管理员审核'); router.push('/login')
   } catch (err) {
     const msg = err?.response?.data?.message || err?.message || '注册失败，请稍后重试'
     ElMessage.error(msg)
