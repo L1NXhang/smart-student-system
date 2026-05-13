@@ -8,6 +8,7 @@ const { sequelize } = require('./models');
 const authRoutes = require('./routes/auth');
 const studentRoutes = require('./routes/student');
 const scholarshipRoutes = require('./routes/scholarship');
+const academicRoutes = require('./routes/academic');
 const adminRoutes = require('./routes/admin');
 const { error } = require('./utils/response');
 
@@ -27,6 +28,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/scholarship', scholarshipRoutes);
+app.use('/api/academic', academicRoutes);
 app.use('/api/admin', adminRoutes);
 
 // 健康检查

@@ -1,8 +1,24 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const path = require('path');
 const adminStudentController = require('../controllers/adminStudentController');
 const adminScholarshipController = require('../controllers/adminScholarshipController');
+const adminAcademicController = require('../controllers/adminAcademicController');
 const { authMiddleware, adminMiddleware } = require('../middlewares/auth');
+
+// 配置文件上传
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, '../../uploads'));
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage });
 
 // 所有管理员路由都需要认证和管理员权限
 router.use(authMiddleware, adminMiddleware);
@@ -53,5 +69,24 @@ router.get('/work-study/applications', adminScholarshipController.getWorkStudyAp
 
 // 审核岗位申请
 router.put('/work-study/applications/:id', adminScholarshipController.auditWorkStudyApplication);
+
+// ===== 学业发展管理 =====
+// 批量导入成绩
+router.post('/grades/import', upload.single('file'), adminAcademicController.importGrades);
+
+// 批量导入第二课堂活动
+router.post('/second-classroom/import', upload.single('file'), adminAcademicController.importSecondClassroom);
+
+// 获取中期鉴定列表
+router.get('/midterm-evaluations', adminAcademicController.getMidtermEvaluations);
+
+// 审核中期鉴定
+router.put('/midterm-evaluations/:id', adminAcademicController.auditMidtermEvaluation);
+
+// 获取获奖记录列表
+router.get('/awards', adminAcademicController.getAwards);
+
+// 审核获奖记录
+router.put('/awards/:id', adminAcademicController.auditAward);
 
 module.exports = router;
