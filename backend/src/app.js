@@ -113,6 +113,19 @@ app.get('/api/health', (req, res) => {
   res.json({ code: 200, message: '服务正常运行', data: null })
 })
 
+// 生产环境：托管前端静态文件
+if (process.env.NODE_ENV === 'production') {
+  const frontendDist = path.join(__dirname, '../../frontend/dist')
+  app.use(express.static(frontendDist))
+  // SPA fallback：非 API 路径返回 index.html
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next()
+    res.sendFile(path.join(frontendDist, 'index.html'), (err) => {
+      if (err) next()
+    })
+  })
+}
+
 app.use((req, res) => {
   error(res, '接口不存在', 404)
 })

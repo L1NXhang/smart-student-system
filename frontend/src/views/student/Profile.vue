@@ -2,133 +2,223 @@
   <div class="profile-page">
     <div class="page-header">
       <h2>个人信息</h2>
-      <p>查看和管理您的个人档案信息</p>
+      <p>查看和编辑您的个人档案，关键字段修改需管理员审核</p>
     </div>
 
-    <el-tabs v-model="activeTab" type="border-card" @tab-click="onTabClick">
-      <el-tab-pane label="基础信息" name="basic">
-        <div class="info-section" ref="sectionRef">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="姓名">{{ info.name || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="学号">{{ info.username || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="照片">
-              <el-avatar :size="80" :src="info.photo" v-if="info.photo" />
-              <span v-else>未上传</span>
-            </el-descriptions-item>
-            <el-descriptions-item label="联系方式">{{ info.phone || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="身份证号" :span="2">{{ info.idCard || '-' }}</el-descriptions-item>
-          </el-descriptions>
-          <el-button type="primary" class="edit-btn" @click="openChangeDialog('basic')">申请修改</el-button>
-        </div>
-      </el-tab-pane>
-
-      <el-tab-pane label="学籍信息" name="academic">
-        <div class="info-section">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="学院">{{ info.college || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="专业">{{ info.major || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="年级">{{ info.grade || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="班级">{{ info.className || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="校区">{{ info.campus || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="宿舍号">{{ info.dormitory || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="校外住宿地址" :span="2">{{ info.offCampusAddress || '无' }}</el-descriptions-item>
-          </el-descriptions>
-          <el-button type="primary" class="edit-btn" @click="openChangeDialog('academic')">申请修改</el-button>
-        </div>
-      </el-tab-pane>
-
-      <el-tab-pane label="个人特质" name="personal">
-        <div class="info-section">
-          <el-descriptions :column="1" border>
-            <el-descriptions-item label="病史">{{ info.medicalHistory || '无' }}</el-descriptions-item>
-            <el-descriptions-item label="爱好">{{ info.hobbies || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="性格特征">{{ info.personality || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="职业目标">{{ info.careerGoal || '-' }}</el-descriptions-item>
-          </el-descriptions>
-          <el-button type="primary" class="edit-btn" @click="openChangeDialog('personal')">申请修改</el-button>
-        </div>
-      </el-tab-pane>
-
-      <el-tab-pane label="联系信息" name="contact">
-        <div class="info-section">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="班主任">{{ info.classTeacher || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="班主任电话">{{ info.classTeacherPhone || '-' }}</el-descriptions-item>
-            <el-descriptions-item
-              v-for="m in familyMembers"
-              :key="m.id"
-              :label="m.relation || m.memberType"
+    <div class="profile-body" v-loading="loading">
+      <el-form
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        label-width="130px"
+        label-position="right"
+        :disabled="!editing"
+        class="profile-form"
+      >
+        <!-- 照片区域 -->
+        <div class="photo-section">
+          <div class="photo-wrapper">
+            <el-avatar :size="120" :src="form.photo" shape="square" class="id-photo">
+              <el-icon :size="40"><UserFilled /></el-icon>
+            </el-avatar>
+            <el-upload
+              v-if="editing"
+              :show-file-list="false"
+              :before-upload="handlePhotoUpload"
+              accept="image/jpeg,image/png"
+              class="photo-upload"
             >
-              {{ m.name }} — {{ m.phone }}
-            </el-descriptions-item>
-          </el-descriptions>
-          <el-button type="primary" class="edit-btn" @click="openChangeDialog('contact')">申请修改</el-button>
+              <el-button type="primary" plain size="small">更换照片</el-button>
+            </el-upload>
+            <span class="photo-hint">证件照（一寸/二寸）</span>
+          </div>
         </div>
-      </el-tab-pane>
 
-      <el-tab-pane label="特殊信息" name="special">
-        <div class="info-section">
-          <el-descriptions :column="1" border>
-            <el-descriptions-item label="困难认定等级">
-              {{ info.difficultyLevel || '未申请' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="证明材料" v-if="info.difficultyMaterial">
-              <el-link type="primary" :href="info.difficultyMaterial" target="_blank">查看材料</el-link>
-            </el-descriptions-item>
-          </el-descriptions>
-          <el-button
-            v-if="!info.difficultyLevel"
-            type="warning"
-            class="edit-btn"
-            @click="showDifficultyForm = true"
-          >
-            申请困难认定
+        <el-divider />
+
+        <!-- 基础信息 -->
+        <h3 class="section-title">基础信息</h3>
+        <el-row :gutter="24">
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="姓名">
+              <el-input :value="form.name" disabled />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="学号">
+              <el-input :value="form.username" disabled />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="联系方式" prop="phone">
+              <el-input v-model="form.phone" :disabled="!editing" placeholder="手机号码" />
+              <el-tag v-if="!editing && form.phone" size="small" type="warning" class="review-badge">修改需审核</el-tag>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="身份证号" prop="idCard">
+              <el-input v-model="form.idCard" :disabled="!editing" placeholder="18位身份证号" />
+              <el-tag v-if="!editing && form.idCard" size="small" type="warning" class="review-badge">修改需审核</el-tag>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-divider />
+
+        <!-- 学籍信息 -->
+        <h3 class="section-title">学籍信息</h3>
+        <el-row :gutter="24">
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="学院">
+              <el-input v-model="form.college" :disabled="!editing" />
+              <el-tag v-if="!editing && form.college" size="small" type="warning" class="review-badge">修改需审核</el-tag>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="专业">
+              <el-input v-model="form.major" :disabled="!editing" />
+              <el-tag v-if="!editing && form.major" size="small" type="warning" class="review-badge">修改需审核</el-tag>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="年级">
+              <el-input v-model="form.grade" :disabled="!editing" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="班级">
+              <el-input v-model="form.className" :disabled="!editing" />
+              <el-tag v-if="!editing && form.className" size="small" type="warning" class="review-badge">修改需审核</el-tag>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="校区">
+              <el-input v-model="form.campus" :disabled="!editing" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="宿舍号">
+              <el-input v-model="form.dormitory" :disabled="!editing" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="校外住宿地址">
+              <el-input v-model="form.offCampusAddress" :disabled="!editing" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-divider />
+
+        <!-- 个人特质 -->
+        <h3 class="section-title">个人特质</h3>
+        <el-row :gutter="24">
+          <el-col :span="24">
+            <el-form-item label="病史">
+              <el-input v-model="form.medicalHistory" :disabled="!editing" type="textarea" :rows="2" placeholder="如有请填写" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="爱好">
+              <el-input v-model="form.hobbies" :disabled="!editing" type="textarea" :rows="2" placeholder="个人爱好" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="性格特征">
+              <el-input v-model="form.personality" :disabled="!editing" type="textarea" :rows="2" placeholder="性格描述" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="职业目标">
+              <el-input v-model="form.careerGoal" :disabled="!editing" type="textarea" :rows="2" placeholder="职业规划目标" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-divider />
+
+        <!-- 联系信息 -->
+        <h3 class="section-title">联系信息</h3>
+        <el-row :gutter="24">
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="班主任">
+              <el-input v-model="form.classTeacher" :disabled="!editing" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="班主任联系方式">
+              <el-input v-model="form.classTeacherPhone" :disabled="!editing" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12" v-for="(m, i) in form.familyMembers" :key="i">
+            <el-form-item :label="m.relation || m.memberType">
+              <el-input v-model="m.name" :disabled="!editing" :placeholder="'姓名'" style="width:40%;margin-right:8px" />
+              <el-input v-model="m.phone" :disabled="!editing" placeholder="电话" style="width:55%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-divider />
+
+        <!-- 特殊信息 -->
+        <h3 class="section-title">特殊信息</h3>
+        <el-row :gutter="24">
+          <el-col :xs="24" :sm="12">
+            <el-form-item label="困难认定等级">
+              <el-tag v-if="form.difficultyLevel" :type="difficultyTag(form.difficultyLevel)">
+                {{ form.difficultyLevel }}
+              </el-tag>
+              <span v-else>未申请</span>
+              <el-button
+                v-if="!form.difficultyLevel"
+                type="warning"
+                size="small"
+                style="margin-left: 12px"
+                @click="showDifficultyForm = true"
+              >
+                申请困难认定
+              </el-button>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12" v-if="form.difficultyMaterial">
+            <el-form-item label="证明材料">
+              <el-link type="primary" :href="form.difficultyMaterial" target="_blank">查看材料</el-link>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <!-- 操作按钮 -->
+        <div class="form-actions" v-if="!editing">
+          <el-button type="primary" size="large" @click="startEdit">编辑信息</el-button>
+        </div>
+        <div class="form-actions" v-else>
+          <el-button size="large" @click="cancelEdit">取消</el-button>
+          <el-button type="primary" size="large" @click="submitAll" :loading="submitting">
+            提交修改
           </el-button>
         </div>
-      </el-tab-pane>
-    </el-tabs>
-
-    <!-- 信息变更弹窗 -->
-    <el-dialog v-model="showChangeDialog" title="申请信息变更" width="500px">
-      <el-form :model="changeForm" label-width="100px">
-        <el-form-item label="变更字段">
-          <el-input :value="changeForm.fieldName" disabled />
-        </el-form-item>
-        <el-form-item label="原值">
-          <el-input :value="changeForm.oldValue" disabled />
-        </el-form-item>
-        <el-form-item label="新值">
-          <el-input v-model="changeForm.newValue" type="textarea" />
-        </el-form-item>
-        <el-form-item label="变更原因">
-          <el-input v-model="changeForm.reason" type="textarea" />
-        </el-form-item>
       </el-form>
-      <template #footer>
-        <el-button @click="showChangeDialog = false">取消</el-button>
-        <el-button type="primary" @click="submitChange">提交申请</el-button>
-      </template>
-    </el-dialog>
+    </div>
 
     <!-- 困难认定弹窗 -->
     <el-dialog v-model="showDifficultyForm" title="困难认定申请" width="500px">
-      <el-form :model="difficultyForm" label-width="100px">
+      <el-form :model="diffForm" label-width="100px">
         <el-form-item label="认定等级">
-          <el-select v-model="difficultyForm.level" style="width:100%">
+          <el-select v-model="diffForm.level" style="width:100%">
             <el-option label="一般困难" value="一般困难" />
             <el-option label="比较困难" value="比较困难" />
             <el-option label="特别困难" value="特别困难" />
           </el-select>
         </el-form-item>
         <el-form-item label="申请理由">
-          <el-input v-model="difficultyForm.reason" type="textarea" :rows="3" />
+          <el-input v-model="diffForm.reason" type="textarea" :rows="4" />
         </el-form-item>
         <el-form-item label="证明材料">
           <el-upload
             :auto-upload="false"
             :limit="3"
             list-type="picture"
-            v-model:file-list="difficultyForm.files"
+            v-model:file-list="diffForm.files"
           >
             <el-button type="primary" plain>选择文件</el-button>
           </el-upload>
@@ -136,107 +226,296 @@
       </el-form>
       <template #footer>
         <el-button @click="showDifficultyForm = false">取消</el-button>
-        <el-button type="primary" @click="submitDifficulty">提交申请</el-button>
+        <el-button type="primary" @click="submitDifficulty" :loading="diffSubmitting">提交申请</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getStudentInfo, submitInfoChange, submitDifficultyApplication } from '@/api/student'
-import gsap from 'gsap'
+import { UserFilled } from '@element-plus/icons-vue'
+import {
+  getStudentInfo, uploadPhoto, batchSubmitInfoChange,
+  updateStudentInfo, submitDifficultyApplication,
+} from '@/api/student'
 
-const activeTab = ref('basic')
-const info = ref({})
-const familyMembers = computed(() => info.value.familyInfo || [])
-const sectionRef = ref(null)
+const formRef = ref(null)
+const loading = ref(true)
+const editing = ref(false)
+const submitting = ref(false)
 
-const showChangeDialog = ref(false)
-const changeForm = ref({ fieldName: '', oldValue: '', newValue: '', reason: '' })
+// Store original values for diff
+const originalForm = ref({})
 
-const showDifficultyForm = ref(false)
-const difficultyForm = ref({ level: '', reason: '', files: [] })
-
-onMounted(async () => {
-  try {
-    const res = await getStudentInfo()
-    info.value = res.data
-  } catch { /* handled by interceptor */ }
-  gsap.from('.info-section', { opacity: 0, y: 20, duration: 0.4 })
+const form = reactive({
+  name: '',
+  username: '',
+  photo: '',
+  phone: '',
+  idCard: '',
+  college: '',
+  major: '',
+  grade: '',
+  className: '',
+  campus: '',
+  dormitory: '',
+  offCampusAddress: '',
+  medicalHistory: '',
+  hobbies: '',
+  personality: '',
+  careerGoal: '',
+  classTeacher: '',
+  classTeacherPhone: '',
+  difficultyLevel: '',
+  difficultyMaterial: '',
+  familyMembers: [],
 })
 
-function onTabClick() {
-  gsap.fromTo('.info-section', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3 })
-}
-
-const fieldMap = {
-  basic: [
-    { key: 'phone', label: '联系方式' },
-    { key: 'photo', label: '照片' },
-    { key: 'idCard', label: '身份证号' },
-  ],
-  academic: [
-    { key: 'college', label: '学院' },
-    { key: 'major', label: '专业' },
-    { key: 'className', label: '班级' },
-    { key: 'campus', label: '校区' },
-    { key: 'dormitory', label: '宿舍号' },
-  ],
-  personal: [
-    { key: 'medicalHistory', label: '病史' },
-    { key: 'hobbies', label: '爱好' },
-    { key: 'personality', label: '性格特征' },
-    { key: 'careerGoal', label: '职业目标' },
-  ],
-  contact: [
-    { key: 'classTeacher', label: '班主任' },
-    { key: 'classTeacherPhone', label: '班主任电话' },
+const rules = {
+  phone: [{ pattern: /^1\d{10}$/, message: '请输入正确的手机号', trigger: 'blur' }],
+  idCard: [
+    { pattern: /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/, message: '请输入正确的身份证号', trigger: 'blur' },
   ],
 }
 
-function openChangeDialog(section) {
-  // simplified: pick first field as demo
-  const fields = fieldMap[section]
-  if (!fields?.length) return
-  changeForm.value = {
-    fieldName: fields[0].label,
-    oldValue: info.value[fields[0].key] || '',
-    newValue: '',
-    reason: '',
+// Difficulty form
+const showDifficultyForm = ref(false)
+const diffSubmitting = ref(false)
+const diffForm = reactive({ level: '', reason: '', files: [] })
+
+const reviewFields = ['phone', 'idCard', 'college', 'major', 'className', 'classTeacher', 'classTeacherPhone']
+
+function difficultyTag(level) {
+  const map = { '一般困难': 'warning', '比较困难': 'warning', '特别困难': 'danger' }
+  return map[level] || 'info'
+}
+
+async function fetchInfo() {
+  loading.value = true
+  try {
+    const res = await getStudentInfo()
+    const data = res.data
+    Object.assign(form, {
+      name: data.user?.name || data.name || '',
+      username: data.user?.username || data.username || '',
+      photo: data.photo || '',
+      phone: data.phone || '',
+      idCard: data.idCard || data.id_card || '',
+      college: data.college || '',
+      major: data.major || '',
+      grade: data.grade || '',
+      className: data.className || data.class_name || '',
+      campus: data.campus || '',
+      dormitory: data.dormitory || '',
+      offCampusAddress: data.offCampusAddress || data.off_campus_address || '',
+      medicalHistory: data.medicalHistory || data.medical_history || '',
+      hobbies: data.hobbies || '',
+      personality: data.personality || '',
+      careerGoal: data.careerGoal || data.career_goal || '',
+      classTeacher: data.classTeacher || data.class_teacher || '',
+      classTeacherPhone: data.classTeacherPhone || data.class_teacher_phone || '',
+      difficultyLevel: data.difficultyLevel || data.difficulty_level || '',
+      difficultyMaterial: data.difficultyMaterial || data.difficulty_material || '',
+      familyMembers: data.familyInfo || data.familyMembers || [],
+    })
+    originalForm.value = { ...form }
+  } catch {
+    /* handled by interceptor */
+  } finally {
+    loading.value = false
   }
-  showChangeDialog.value = true
 }
 
-async function submitChange() {
-  await submitInfoChange(changeForm.value)
-  ElMessage.success('变更申请已提交，请等待审核')
-  showChangeDialog.value = false
+function startEdit() {
+  originalForm.value = { ...form }
+  editing.value = true
+}
+
+function cancelEdit() {
+  Object.assign(form, originalForm.value)
+  editing.value = false
+}
+
+async function handlePhotoUpload(file) {
+  if (file.size > 2 * 1024 * 1024) {
+    ElMessage.warning('照片大小不能超过 2MB')
+    return false
+  }
+  const fd = new FormData()
+  fd.append('photo', file)
+  try {
+    const res = await uploadPhoto(fd)
+    form.photo = res.data?.photo || ''
+    ElMessage.success('照片上传成功')
+  } catch {
+    /* handled by interceptor */
+  }
+  return false // prevent default upload
+}
+
+async function submitAll() {
+  const valid = await formRef.value.validate().catch(() => false)
+  if (!valid) return
+
+  submitting.value = true
+  try {
+    // Collect changes
+    const changes = []
+    const directUpdates = {}
+
+    for (const key of Object.keys(form)) {
+      if (['name', 'username', 'photo', 'difficultyLevel', 'difficultyMaterial', 'familyMembers'].includes(key)) continue
+      const oldVal = originalForm.value[key]
+      const newVal = form[key]
+      if (newVal !== oldVal && newVal) {
+        if (reviewFields.includes(key)) {
+          changes.push({
+            fieldLabel: getFieldLabel(key),
+            fieldName: key,
+            oldValue: oldVal || '',
+            newValue: newVal,
+            reason: '学生自行修改',
+          })
+        } else {
+          directUpdates[key] = newVal
+        }
+      }
+    }
+
+    // Submit direct updates (personal fields)
+    if (Object.keys(directUpdates).length) {
+      await updateStudentInfo(directUpdates)
+    }
+
+    // Submit changes for admin review
+    if (changes.length) {
+      await batchSubmitInfoChange({ changes })
+    }
+
+    const msg = changes.length
+      ? `已提交 ${changes.length} 项修改（其中需审核 ${changes.length} 项），请等待管理员审核`
+      : '信息已更新'
+    ElMessage.success(msg)
+    editing.value = false
+    await fetchInfo()
+  } catch {
+    /* handled by interceptor */
+  } finally {
+    submitting.value = false
+  }
+}
+
+function getFieldLabel(key) {
+  const map = {
+    phone: '联系方式', idCard: '身份证号', college: '学院', major: '专业',
+    className: '班级', campus: '校区', dormitory: '宿舍号',
+    classTeacher: '班主任', classTeacherPhone: '班主任联系方式',
+  }
+  return map[key] || key
 }
 
 async function submitDifficulty() {
-  const fd = new FormData()
-  fd.append('level', difficultyForm.value.level)
-  fd.append('reason', difficultyForm.value.reason)
-  difficultyForm.value.files.forEach((f) => fd.append('material', f.raw))
-  await submitDifficultyApplication(fd)
-  ElMessage.success('困难认定申请已提交')
-  showDifficultyForm.value = false
+  if (!diffForm.level || !diffForm.reason) {
+    ElMessage.warning('请填写完整信息')
+    return
+  }
+  diffSubmitting.value = true
+  try {
+    const fd = new FormData()
+    fd.append('level', diffForm.level)
+    fd.append('reason', diffForm.reason)
+    diffForm.files.forEach((f) => fd.append('material', f.raw))
+    await submitDifficultyApplication(fd)
+    ElMessage.success('困难认定申请已提交')
+    showDifficultyForm.value = false
+    await fetchInfo()
+  } catch {
+    /* handled by interceptor */
+  } finally {
+    diffSubmitting.value = false
+  }
 }
+
+onMounted(() => {
+  fetchInfo()
+})
 </script>
 
 <style scoped>
 .profile-page {
-  max-width: 1000px;
+  max-width: 100%;
 }
-.info-section {
-  position: relative;
-  padding-bottom: 50px;
+
+.profile-body {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
-.edit-btn {
-  position: absolute;
-  bottom: 0;
-  right: 0;
+
+.profile-form {
+  max-width: 900px;
+}
+
+/* Photo */
+.photo-section {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.photo-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.id-photo {
+  border: 2px solid var(--el-border-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.photo-hint {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.photo-upload {
+  margin-top: 4px;
+}
+
+/* Section title */
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--el-color-primary);
+  margin: 0 0 12px 0;
+  padding-left: 10px;
+  border-left: 3px solid var(--el-color-primary);
+}
+
+/* Review badge */
+.review-badge {
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* Actions */
+.form-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--el-border-color-lighter);
+}
+
+@media (max-width: 768px) {
+  .profile-body {
+    padding: 16px;
+  }
 }
 </style>

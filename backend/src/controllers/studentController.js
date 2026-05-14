@@ -205,11 +205,62 @@ const getDifficultyApplication = async (req, res) => {
   }
 };
 
+// 上传学生照片
+const uploadPhoto = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    if (!studentInfo) return error(res, '学生信息不存在', 404);
+    if (!req.file) return error(res, '请选择照片', 400);
+
+    const photoPath = `/uploads/${req.file.filename}`;
+    await studentInfo.update({ photo: photoPath });
+    return success(res, { photo: photoPath }, '照片上传成功');
+  } catch (err) {
+    console.error('上传照片错误:', err);
+    return error(res, '上传照片失败', 500);
+  }
+};
+
+// 批量提交信息变更申请
+const batchSubmitInfoChange = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { changes } = req.body;
+
+    if (!changes || !changes.length) {
+      return error(res, '请提供变更信息', 400);
+    }
+
+    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    if (!studentInfo) return error(res, '学生信息不存在', 404);
+
+    for (const change of changes) {
+      if (!change.newValue || change.newValue === change.oldValue) continue;
+      await sequelize.query(
+        `INSERT INTO info_change_requests (student_id, field_name, old_value, new_value, reason, status, created_at)
+         VALUES (?, ?, ?, ?, ?, 'pending', NOW())`,
+        {
+          replacements: [studentInfo.id, change.fieldLabel, change.oldValue || '', change.newValue, change.reason || '信息更新'],
+          type: sequelize.QueryTypes.INSERT
+        }
+      );
+    }
+
+    return success(res, null, `已提交 ${changes.length} 项变更申请，请等待审核`);
+  } catch (err) {
+    console.error('批量提交信息变更错误:', err);
+    return error(res, '提交变更申请失败', 500);
+  }
+};
+
 module.exports = {
   getStudentInfo,
   updateStudentInfo,
   submitInfoChange,
   getInfoChangeRequests,
   submitDifficultyApplication,
-  getDifficultyApplication
+  getDifficultyApplication,
+  uploadPhoto,
+  batchSubmitInfoChange,
 };

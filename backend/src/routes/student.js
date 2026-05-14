@@ -24,8 +24,14 @@ router.get('/info', authMiddleware, studentController.getStudentInfo);
 // 更新学生信息
 router.put('/info', authMiddleware, studentController.updateStudentInfo);
 
+// 上传照片
+router.put('/info/photo', authMiddleware, upload.single('photo'), studentController.uploadPhoto);
+
 // 提交信息变更申请
 router.post('/info-change', authMiddleware, studentController.submitInfoChange);
+
+// 批量提交信息变更
+router.post('/info-change/batch', authMiddleware, studentController.batchSubmitInfoChange);
 
 // 获取信息变更申请列表
 router.get('/info-change', authMiddleware, studentController.getInfoChangeRequests);

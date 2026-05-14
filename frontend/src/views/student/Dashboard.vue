@@ -34,22 +34,23 @@ async function fetchData() {
 
     const [announceRes, eventRes, scholarshipRes, unreadRes] = await Promise.all([
       getAnnouncements({ page: 1, pageSize: 5 }),
-      getEvents({ page: 1, pageSize: 5, status: 'upcoming' }),
+      getEvents({ page: 1, pageSize: 5 }),
       getScholarshipApplications(),
       getUnreadAnnounceCount()
     ])
 
-    announcements.value = announceRes.data?.rows || announceRes.data || []
-    events.value = eventRes.data?.rows || eventRes.data || []
+    // API 拦截器已解包 data，直接取 list
+    announcements.value = announceRes?.list || []
+    events.value = eventRes?.list || []
 
-    const scholarshipData = scholarshipRes.data?.rows || scholarshipRes.data || []
-    scholarshipCount.value = scholarshipData.length
+    const scholarshipData = scholarshipRes?.list || []
+    scholarshipCount.value = scholarshipRes?.total || scholarshipData.length
     pendingCount.value = scholarshipData.filter(
-      item => item.status === 'pending' || item.status === 'reviewing'
+      item => item.status === 'pending'
     ).length
 
-    unreadCount.value = unreadRes.data ?? 0
-    eventCount.value = events.value.length
+    unreadCount.value = unreadRes?.unread ?? 0
+    eventCount.value = eventRes?.total || events.value.length
   } catch {
     loadError.value = true
   } finally {
@@ -217,7 +218,7 @@ onMounted(async () => {
             @click="goNotice(item.id)"
           >
             <div class="item-title">{{ item.title }}</div>
-            <div class="item-time">{{ formatDate(item.createdAt || item.createTime) }}</div>
+            <div class="item-time">{{ formatDate(item.created_at) }}</div>
           </div>
         </div>
       </el-col>
@@ -241,7 +242,7 @@ onMounted(async () => {
             <div class="item-title">{{ item.title }}</div>
             <div class="item-meta">
               <el-icon :size="14"><Calendar /></el-icon>
-              <span>{{ formatDate(item.eventTime || item.startTime) }}</span>
+              <span>{{ formatDate(item.event_date) }}</span>
               <template v-if="item.location">
                 <el-icon :size="14" style="margin-left: 12px"><LocationFilled /></el-icon>
                 <span>{{ item.location }}</span>
