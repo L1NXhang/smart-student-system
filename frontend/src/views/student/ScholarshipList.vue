@@ -41,6 +41,20 @@
         <template #default="{ row }">{{ row.review_comment || '-' }}</template>
       </el-table-column>
       <el-table-column prop="created_at" label="申请时间" width="160" />
+      <el-table-column label="操作" width="100" fixed="right">
+        <template #default="{ row }">
+          <el-button
+            v-if="row.status === 'approved'"
+            type="primary"
+            link
+            size="small"
+            @click="exportDocx(row.id)"
+          >
+            导出Word
+          </el-button>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
     </el-table>
 
     <el-empty v-else description="暂无申请记录">
@@ -51,8 +65,9 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
-import { getScholarshipApplications } from '@/api/scholarship'
+import { getScholarshipApplications, exportScholarshipDocx } from '@/api/scholarship'
 
 const list = ref([])
 const loading = ref(false)
@@ -72,6 +87,20 @@ onMounted(async () => {
   } catch { /* handled */ }
   finally { loading.value = false }
 })
+
+async function exportDocx(id) {
+  try {
+    const res = await exportScholarshipDocx(id)
+    const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `奖学金申请表_${id}.docx`
+    a.click()
+    URL.revokeObjectURL(url)
+    ElMessage.success('导出成功')
+  } catch { /* handled */ }
+}
 </script>
 
 <style scoped>

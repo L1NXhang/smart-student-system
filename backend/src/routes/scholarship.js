@@ -9,6 +9,9 @@ router.post('/applications', authMiddleware, scholarshipController.submitScholar
 // 获取我的奖学金申请
 router.get('/applications', authMiddleware, scholarshipController.getMyScholarshipApplications);
 
+// 导出奖学金申请为Word
+router.get('/applications/:id/export', authMiddleware, scholarshipController.exportToDocx);
+
 // 助学金申请
 router.post('/grants', authMiddleware, scholarshipController.submitGrantApplication);
 

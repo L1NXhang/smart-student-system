@@ -1,5 +1,6 @@
-const { StudentInfo, sequelize } = require('../models');
+const { StudentInfo, User, sequelize } = require('../models');
 const { success, error, paginate } = require('../utils/response');
+const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, AlignmentType, BorderStyle, WidthType } = require('docx');
 
 // 提交奖学金申请
 const submitScholarshipApplication = async (req, res) => {
@@ -388,6 +389,113 @@ const getMyWorkStudyApplications = async (req, res) => {
   }
 };
 
+// 导出奖学金申请为Word文档
+const exportToDocx = async (req, res) => {
+  try {
+    const applicationId = req.params.id;
+    const userId = req.user.id;
+
+    // Get application with student info
+    const [apps] = await sequelize.query(
+      `SELECT sa.*, si.college, si.major, si.grade, si.class_name, si.class_teacher,
+              u.name as student_name, u.username as student_id
+       FROM scholarship_applications sa
+       JOIN student_info si ON sa.student_id = si.id
+       JOIN users u ON si.user_id = u.id
+       WHERE sa.id = ?`,
+      { replacements: [applicationId], type: sequelize.QueryTypes.SELECT }
+    );
+
+    if (!apps) return error(res, '申请不存在', 404);
+
+    const app = apps;
+    const conductItems = app.conduct_score_detail ? JSON.parse(app.conduct_score_detail) : [];
+    const awardsList = app.awards_summary ? JSON.parse(app.awards_summary) : [];
+    const materials = app.materials ? JSON.parse(app.materials) : [];
+
+    const doc = new Document({
+      sections: [{
+        properties: {},
+        children: [
+          new Paragraph({ text: '奖学金申请表', heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, spacing: { after: 400 } }),
+
+          // Basic info table
+          new Paragraph({ text: '一、基本信息', heading: HeadingLevel.HEADING_2, spacing: { before: 200, after: 120 } }),
+          createTable([
+            ['姓名', app.student_name || '', '学号', app.student_id || ''],
+            ['学院', app.college || '', '专业', app.major || ''],
+            ['年级', app.grade || '', '班级', app.class_name || ''],
+          ]),
+
+          // Academic info
+          new Paragraph({ text: '二、学业成绩', heading: HeadingLevel.HEADING_2, spacing: { before: 300, after: 120 } }),
+          createTable([
+            ['奖学金类型', app.scholarship_type || '', 'GPA', app.gpa || ''],
+            ['专业排名', app.ranking || '', '操行分', String(app.conduct_score || 0)],
+          ]),
+
+          // Conduct score detail
+          new Paragraph({ text: '三、操行分明细', heading: HeadingLevel.HEADING_2, spacing: { before: 300, after: 120 } }),
+          ...(conductItems.length > 0
+            ? [createTable([
+                ['类别', '加分项目', '分值', '依据'],
+                ...conductItems.map(c => [c.category || '', c.item || '', String(c.score || 0), c.basis || '']),
+              ])]
+            : [new Paragraph({ text: '（无操行分项目）', spacing: { after: 120 } })]
+          ),
+
+          // Awards
+          new Paragraph({ text: '四、获奖情况', heading: HeadingLevel.HEADING_2, spacing: { before: 300, after: 120 } }),
+          ...(awardsList.length > 0
+            ? [createTable([
+                ['获奖名称', '级别', '获奖日期'],
+                ...awardsList.map(a => [a.name || '', a.level || '', a.date || '']),
+              ])]
+            : [new Paragraph({ text: '（无获奖记录）', spacing: { after: 120 } })]
+          ),
+
+          // Application reason
+          new Paragraph({ text: '五、申请理由', heading: HeadingLevel.HEADING_2, spacing: { before: 300, after: 120 } }),
+          new Paragraph({ text: app.reason || '', spacing: { after: 200 } }),
+
+          // Materials
+          new Paragraph({ text: '六、证明材料', heading: HeadingLevel.HEADING_2, spacing: { before: 300, after: 120 } }),
+          ...(materials.length > 0
+            ? materials.map((m, i) => new Paragraph({ text: `${i + 1}. ${typeof m === 'string' ? m : m.name || m.url || ''}`, spacing: { after: 60 } }))
+            : [new Paragraph({ text: '（无证明材料）' })]
+          ),
+
+          // Signature areas
+          new Paragraph({ text: '', spacing: { before: 600 } }),
+          new Paragraph({ text: `班主任签字：_______________    日期：_______________`, spacing: { after: 200 } }),
+          new Paragraph({ text: `辅导员签字：_______________    日期：_______________`, spacing: { after: 200 } }),
+          new Paragraph({ text: `学院盖章：_______________`, spacing: { after: 200 } }),
+        ],
+      }],
+    });
+
+    const buffer = await Packer.toBuffer(doc);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="奖学金申请表_${app.student_name}_${app.scholarship_type}.docx"`);
+    res.send(buffer);
+  } catch (err) {
+    console.error('导出Word错误:', err);
+    return error(res, '导出失败', 500);
+  }
+};
+
+function createTable(rows) {
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: rows.map((cells, rowIdx) => new TableRow({
+      children: cells.map(cell => new TableCell({
+        children: [new Paragraph({ text: cell, alignment: rowIdx === 0 ? AlignmentType.CENTER : AlignmentType.LEFT })],
+        ...(rowIdx === 0 ? { shading: { fill: 'E8F0FE' } } : {}),
+      })),
+    })),
+  });
+}
+
 module.exports = {
   submitScholarshipApplication,
   getMyScholarshipApplications,
@@ -396,5 +504,6 @@ module.exports = {
   getWorkStudyPositions,
   getWorkStudyPositionDetail,
   applyWorkStudyPosition,
-  getMyWorkStudyApplications
+  getMyWorkStudyApplications,
+  exportToDocx,
 };

@@ -8,6 +8,10 @@ export function applyScholarship(data) {
   return api.post('/scholarship/applications', data)
 }
 
+export function exportScholarshipDocx(id) {
+  return api.get(`/scholarship/applications/${id}/export`, { responseType: 'blob' })
+}
+
 export function getWorkStudyPositions(params) {
   return api.get('/scholarship/work-study/positions', { params })
 }
