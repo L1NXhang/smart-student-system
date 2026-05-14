@@ -5,7 +5,7 @@ const { success, error, paginate } = require('../utils/response');
 const submitScholarshipApplication = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { scholarshipType, reason, materials } = req.body;
+    const { scholarshipType, reason, materials, gpa, ranking, awardsSummary, conductScore, conductScoreDetail, templateData } = req.body;
 
     const studentInfo = await StudentInfo.findOne({ where: { userId } });
     if (!studentInfo) {
@@ -14,7 +14,7 @@ const submitScholarshipApplication = async (req, res) => {
 
     // 检查是否已有待审核的同类申请
     const existing = await sequelize.query(
-      `SELECT * FROM scholarship_applications 
+      `SELECT * FROM scholarship_applications
        WHERE student_id = ? AND scholarship_type = ? AND status = 'pending'`,
       {
         replacements: [studentInfo.id, scholarshipType],
@@ -28,10 +28,16 @@ const submitScholarshipApplication = async (req, res) => {
 
     // 插入申请
     await sequelize.query(
-      `INSERT INTO scholarship_applications (student_id, scholarship_type, reason, materials, status, created_at)
-       VALUES (?, ?, ?, ?, 'pending', NOW())`,
+      `INSERT INTO scholarship_applications
+       (student_id, scholarship_type, reason, materials, gpa, ranking, awards_summary, conduct_score, conduct_score_detail, template_data, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())`,
       {
-        replacements: [studentInfo.id, scholarshipType, reason, JSON.stringify(materials || [])],
+        replacements: [
+          studentInfo.id, scholarshipType, reason, JSON.stringify(materials || []),
+          gpa || null, ranking || null, awardsSummary || null,
+          conductScore || 0, conductScoreDetail ? JSON.stringify(conductScoreDetail) : null,
+          templateData ? JSON.stringify(templateData) : null,
+        ],
         type: sequelize.QueryTypes.INSERT
       }
     );

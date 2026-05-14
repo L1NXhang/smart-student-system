@@ -3,11 +3,11 @@
     <div class="page-header">
       <div class="header-left">
         <h2>奖助服务</h2>
-        <p>查看您已提交的奖学金申请记录及审核状态</p>
+        <p>查看奖学金申请记录及审核状态</p>
       </div>
       <div class="header-right">
-        <el-button type="primary" @click="router.push('/scholarship/apply')">
-          申请奖学金
+        <el-button type="primary" @click="$router.push('/scholarship/apply')">
+          <el-icon><Plus /></el-icon> 申请奖学金
         </el-button>
       </div>
     </div>
@@ -15,83 +15,70 @@
     <el-table
       v-if="list.length"
       :data="list"
-      border
       stripe
-      style="width: 100%"
-      row-class-name="table-row"
+      v-loading="loading"
+      empty-text="暂无申请记录"
     >
-      <el-table-column prop="scholarshipType" label="奖学金类型" min-width="160" />
-      <el-table-column prop="reason" label="申请理由" min-width="200" show-overflow-tooltip />
-      <el-table-column label="状态" width="110">
+      <el-table-column prop="scholarship_type" label="奖学金类型" width="160" />
+      <el-table-column label="GPA / 排名" width="130">
         <template #default="{ row }">
-          <el-tag :type="statusTagMap[row.status]?.type" size="small">
-            {{ statusTagMap[row.status]?.label || row.status }}
-          </el-tag>
+          {{ row.gpa ? row.gpa + ' / ' + (row.ranking || '-') : '-' }}
         </template>
       </el-table-column>
-      <el-table-column prop="createdAt" label="申请时间" width="180" />
-      <el-table-column prop="reviewComment" label="审核意见" min-width="180" show-overflow-tooltip>
+      <el-table-column label="操行分" width="90">
         <template #default="{ row }">
-          {{ row.reviewComment || '-' }}
+          <el-tag v-if="row.conduct_score" type="warning" size="small">{{ row.conduct_score }}</el-tag>
+          <span v-else>-</span>
         </template>
       </el-table-column>
+      <el-table-column prop="reason" label="申请理由" min-width="180" show-overflow-tooltip />
+      <el-table-column label="状态" width="100">
+        <template #default="{ row }">
+          <el-tag :type="statusTag(row.status)" size="small">{{ statusText(row.status) }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column prop="review_comment" label="审核意见" min-width="150" show-overflow-tooltip>
+        <template #default="{ row }">{{ row.review_comment || '-' }}</template>
+      </el-table-column>
+      <el-table-column prop="created_at" label="申请时间" width="160" />
     </el-table>
 
-    <el-empty v-else description="暂无申请记录" />
+    <el-empty v-else description="暂无申请记录">
+      <el-button type="primary" @click="$router.push('/scholarship/apply')">去申请</el-button>
+    </el-empty>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { Plus } from '@element-plus/icons-vue'
 import { getScholarshipApplications } from '@/api/scholarship'
-import gsap from 'gsap'
 
-const router = useRouter()
 const list = ref([])
+const loading = ref(false)
 
-const statusTagMap = {
-  pending: { type: 'warning', label: '待审核' },
-  approved: { type: 'success', label: '已通过' },
-  rejected: { type: 'danger', label: '已拒绝' },
+function statusTag(s) {
+  return { pending: 'warning', approved: 'success', rejected: 'danger' }[s] || 'info'
+}
+function statusText(s) {
+  return { pending: '待审核', approved: '已通过', rejected: '已拒绝' }[s] || s
 }
 
 onMounted(async () => {
+  loading.value = true
   try {
     const res = await getScholarshipApplications()
-    list.value = res.data ?? []
-  } catch { /* handled by interceptor */ }
-
-  gsap.from('.table-row', {
-    opacity: 0,
-    y: 16,
-    duration: 0.4,
-    stagger: 0.08,
-    ease: 'power2.out',
-  })
+    list.value = res.list || res.data || []
+  } catch { /* handled */ }
+  finally { loading.value = false }
 })
 </script>
 
 <style scoped>
-.scholarship-list-page {
-  max-width: 1000px;
-}
-
+.scholarship-list-page { max-width: 1000px; }
 .page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 20px;
+  display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px;
 }
-
-.header-left h2 {
-  margin: 0 0 6px;
-  font-size: 20px;
-}
-
-.header-left p {
-  margin: 0;
-  color: #909399;
-  font-size: 14px;
-}
+.header-left h2 { margin: 0 0 6px; font-size: 20px; }
+.header-left p { margin: 0; color: #909399; font-size: 14px; }
 </style>
