@@ -32,7 +32,7 @@ const register = async (req, res) => {
       password: hashedPassword,
       name,
       role,
-      status: role === 'student' ? 0 : 1 // 学生需要审核，管理员直接通过
+      status: 1 // 学生注册后可直接登录
     });
 
     // 如果是学生，创建学生信息记录
@@ -50,7 +50,7 @@ const register = async (req, res) => {
       name: user.name,
       role: user.role,
       status: user.status
-    }, role === 'student' ? '注册成功，请等待审核' : '注册成功');
+    }, '注册成功');
   } catch (err) {
     console.error('注册错误:', err);
     return error(res, '注册失败', 500);

@@ -5,12 +5,7 @@
       <div class="auth-left">
         <div class="auth-logo">
           <div class="logo-icon">
-            <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="64" height="64" rx="16" fill="currentColor" fill-opacity="0.12"/>
-              <path d="M20 44V24l12 8 12-8v20" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M32 32v12" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-              <circle cx="32" cy="20" r="3" fill="currentColor"/>
-            </svg>
+            <img src="@/assets/logo.png" alt="校徽" class="school-logo" />
           </div>
           <h1 class="system-name">智慧学工系统</h1>
           <p class="system-subtitle">Smart Student Affairs System</p>
@@ -242,24 +237,11 @@ async function handleRegister() {
 }
 
 onMounted(() => {
-  gsap.fromTo(
-    cardRef.value,
-    { y: 30, opacity: 0 },
-    { y: 0, opacity: 1, duration: 0.6, ease: 'power3.out' }
-  )
-
-  gsap.fromTo(
-    Object.values(itemRefs),
-    { x: -20, opacity: 0 },
-    {
-      x: 0,
-      opacity: 1,
-      duration: 0.4,
-      stagger: 0.1,
-      ease: 'power2.out',
-      delay: 0.3,
-    }
-  )
+  const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
+  tl.fromTo(cardRef.value, { y: 40, opacity: 0, scale: 0.96 },
+    { y: 0, opacity: 1, scale: 1, duration: 0.7 })
+  tl.fromTo(Object.values(itemRefs), { x: -24, opacity: 0 },
+    { x: 0, opacity: 1, duration: 0.45, stagger: 0.1 }, '-=0.3')
 })
 </script>
 
@@ -326,15 +308,17 @@ onMounted(() => {
 }
 
 .logo-icon {
-  width: 64px;
-  height: 64px;
+  width: 80px;
+  height: 80px;
   margin: 0 auto 16px;
   color: #fff;
 }
 
-.logo-icon svg {
+.school-logo {
   width: 100%;
   height: 100%;
+  object-fit: contain;
+  border-radius: 12px;
 }
 
 .system-name {
