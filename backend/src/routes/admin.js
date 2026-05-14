@@ -7,6 +7,27 @@ const adminScholarshipController = require('../controllers/adminScholarshipContr
 const adminAcademicController = require('../controllers/adminAcademicController');
 const adminCareerController = require('../controllers/adminCareerController');
 const { authMiddleware, adminMiddleware } = require('../middlewares/auth');
+const { sequelize } = require('../models');
+const { success, error } = require('../utils/response');
+
+// Admin dashboard stats
+router.get('/dashboard/stats', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const [[{ totalStudents }]] = await sequelize.query("SELECT COUNT(*) as totalStudents FROM users WHERE role='student'");
+    const [[{ pendingScholarship }]] = await sequelize.query("SELECT COUNT(*) as pendingScholarship FROM scholarship_applications WHERE status='pending'");
+    const [[{ pendingInfoChange }]] = await sequelize.query("SELECT COUNT(*) as pendingInfoChange FROM info_change_requests WHERE status='pending'");
+    const [[{ pendingDifficulty }]] = await sequelize.query("SELECT COUNT(*) as pendingDifficulty FROM difficulty_applications WHERE status='pending'");
+    const [[{ unhandledFeedback }]] = await sequelize.query("SELECT COUNT(*) as unhandledFeedback FROM feedbacks WHERE reply IS NULL");
+    const [[{ pendingLateReturn }]] = await sequelize.query("SELECT COUNT(*) as pendingLateReturn FROM late_return_records WHERE status='pending'");
+    const [[{ pendingLeave }]] = await sequelize.query("SELECT COUNT(*) as pendingLeave FROM leave_records WHERE status='pending'");
+    const [[{ totalEvents }]] = await sequelize.query("SELECT COUNT(*) as totalEvents FROM events WHERE status=1");
+    return success(res, {
+      totalStudents, pendingScholarship, pendingInfoChange, pendingDifficulty,
+      unhandledFeedback, pendingLateReturn, pendingLeave, totalEvents,
+      totalPending: pendingScholarship + pendingInfoChange + pendingDifficulty + pendingLateReturn + pendingLeave,
+    });
+  } catch (e) { return error(res, e.message, 500); }
+});
 
 // 配置文件上传
 const storage = multer.diskStorage({
