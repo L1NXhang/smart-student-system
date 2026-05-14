@@ -211,6 +211,31 @@ const getMyAppointments = async (req, res) => {
   }
 };
 
+// 取消预约
+const cancelAppointment = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    if (!studentInfo) return error(res, '学生信息不存在', 404);
+
+    const appointments = await sequelize.query(
+      'SELECT * FROM career_appointments WHERE id = ? AND student_id = ?',
+      { replacements: [req.params.id, studentInfo.id], type: sequelize.QueryTypes.SELECT }
+    );
+    if (!appointments.length) return error(res, '预约不存在', 404);
+    if (appointments[0].status !== 'pending') return error(res, '只能取消待确认的预约', 400);
+
+    await sequelize.query(
+      'UPDATE career_appointments SET status = ? WHERE id = ?',
+      { replacements: ['cancelled', req.params.id], type: sequelize.QueryTypes.UPDATE }
+    );
+    return success(res, null, '已取消');
+  } catch (err) {
+    console.error('取消预约错误:', err);
+    return error(res, '取消预约失败', 500);
+  }
+};
+
 // 获取就业信息列表
 const getJobInfos = async (req, res) => {
   try {
@@ -355,6 +380,7 @@ module.exports = {
   getAssessmentHistory,
   createAppointment,
   getMyAppointments,
+  cancelAppointment,
   getJobInfos,
   getJobInfoDetail,
   toggleFavorite

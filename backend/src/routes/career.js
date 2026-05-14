@@ -18,6 +18,9 @@ router.post('/appointments', authMiddleware, careerController.createAppointment)
 // 获取我的预约
 router.get('/appointments', authMiddleware, careerController.getMyAppointments);
 
+// 取消预约
+router.put('/appointments/:id/cancel', authMiddleware, careerController.cancelAppointment);
+
 // 获取就业信息列表
 router.get('/job-infos', authMiddleware, careerController.getJobInfos);
 

@@ -20,6 +20,10 @@ export function getMyAppointments() {
   return api.get('/career/appointments')
 }
 
+export function cancelAppointment(id) {
+  return api.put(`/career/appointments/${id}/cancel`)
+}
+
 export function getJobInfos(params) {
   return api.get('/career/job-infos', { params })
 }
