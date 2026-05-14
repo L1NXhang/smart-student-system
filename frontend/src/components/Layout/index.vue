@@ -51,9 +51,23 @@ watch(sidebarCollapsed, (collapsed) => {
   transition: none;
 }
 
+.layout-main.collapsed {
+  margin-left: 64px;
+}
+
 .layout-content {
   padding: 20px;
   background: var(--color-bg);
   min-height: calc(100vh - var(--header-height));
+}
+
+@media (max-width: 768px) {
+  .layout-main {
+    margin-left: 0 !important;
+  }
+
+  .layout-content {
+    padding: 12px;
+  }
 }
 </style>

@@ -251,4 +251,16 @@ onBeforeUnmount(() => {
 .sidebar-menu:not(.el-menu--collapse) {
   width: var(--sidebar-width, 220px);
 }
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    width: 220px !important;
+    transition: transform 0.3s ease;
+  }
+  .sidebar:not(.collapsed) {
+    transform: translateX(0);
+    box-shadow: 4px 0 20px rgba(0,0,0,0.3);
+  }
+}
 </style>

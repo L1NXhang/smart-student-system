@@ -58,3 +58,54 @@ a {
   font-size: 14px;
   margin-top: 4px;
 }
+
+/* ====== Mobile Responsive ====== */
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 0px;
+  }
+
+  .page-header h2 {
+    font-size: 18px;
+  }
+
+  .card-box {
+    padding: 12px;
+  }
+
+  /* Tables: enable horizontal scroll */
+  .el-table {
+    font-size: 13px;
+  }
+
+  /* Forms: full-width */
+  .el-form-item {
+    display: block !important;
+  }
+  .el-form-item__label {
+    width: auto !important;
+  }
+  .el-form-item__content {
+    margin-left: 0 !important;
+  }
+
+  /* Dialogs */
+  .el-dialog {
+    width: 90% !important;
+  }
+
+  /* Stat cards stack */
+  .el-row > .el-col[class*="24"] {
+    margin-bottom: 8px;
+  }
+}
+
+/* Touch-friendly: bigger tap targets */
+@media (max-width: 768px) {
+  .el-button {
+    min-height: 36px;
+  }
+  .el-menu-item {
+    min-height: 48px;
+  }
+}
