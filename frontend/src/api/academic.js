@@ -16,8 +16,8 @@ export function getDisciplinary() {
   return api.get('/academic/disciplinary')
 }
 
-export function getSecondClassroom() {
-  return api.get('/academic/second-classroom')
+export function getSecondClassroom(params) {
+  return api.get('/academic/second-classroom', { params })
 }
 
 export function submitMidtermEvaluation(data) {
