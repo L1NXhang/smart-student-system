@@ -25,6 +25,18 @@ exports.getLateReturnRecords = async (req, res) => {
   } catch (e) { return error(res, e.message, 500) }
 }
 
+exports.cancelLateReturn = async (req, res) => {
+  try {
+    const student = await StudentInfo.findOne({ where: { user_id: req.user.id } })
+    if (!student) return error(res, '学生信息不存在', 404)
+    const record = await LateReturnRecord.findOne({ where: { id: req.params.id, student_id: student.id } })
+    if (!record) return error(res, '记录不存在', 404)
+    if (record.status !== 'pending') return error(res, '只能取消待审核的记录', 400)
+    await record.update({ status: 'cancelled' })
+    return success(res, null, '已取消')
+  } catch (e) { return error(res, e.message, 500) }
+}
+
 // 外出报备
 exports.submitLeave = async (req, res) => {
   try {
@@ -47,6 +59,18 @@ exports.getLeaveRecords = async (req, res) => {
     if (!student) return error(res, '学生信息不存在', 404)
     const list = await LeaveRecord.findAll({ where: { student_id: student.id }, order: [['created_at', 'DESC']] })
     return success(res, list)
+  } catch (e) { return error(res, e.message, 500) }
+}
+
+exports.cancelLeave = async (req, res) => {
+  try {
+    const student = await StudentInfo.findOne({ where: { user_id: req.user.id } })
+    if (!student) return error(res, '学生信息不存在', 404)
+    const record = await LeaveRecord.findOne({ where: { id: req.params.id, student_id: student.id } })
+    if (!record) return error(res, '记录不存在', 404)
+    if (record.status !== 'pending') return error(res, '只能取消待审核的记录', 400)
+    await record.update({ status: 'cancelled' })
+    return success(res, null, '已取消')
   } catch (e) { return error(res, e.message, 500) }
 }
 

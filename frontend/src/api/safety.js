@@ -8,12 +8,20 @@ export function getLateReturnRecords() {
   return api.get('/safety/late-return')
 }
 
+export function cancelLateReturn(id) {
+  return api.put(`/safety/late-return/${id}/cancel`)
+}
+
 export function submitLeave(data) {
   return api.post('/safety/leave', data)
 }
 
 export function getLeaveRecords() {
   return api.get('/safety/leave')
+}
+
+export function cancelLeave(id) {
+  return api.put(`/safety/leave/${id}/cancel`)
 }
 
 export function getExams() {
