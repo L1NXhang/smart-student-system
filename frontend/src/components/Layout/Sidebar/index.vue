@@ -129,6 +129,11 @@
           <el-icon><Calendar /></el-icon>
           <span>活动管理</span>
         </el-menu-item>
+
+        <el-menu-item index="/message/chat">
+          <el-icon><ChatDotRound /></el-icon>
+          <span>班任留言</span>
+        </el-menu-item>
       </template>
     </el-menu>
   </aside>
