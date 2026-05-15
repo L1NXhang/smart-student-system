@@ -56,6 +56,12 @@
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
+            <el-form-item label="邮箱" prop="email">
+              <el-input v-model="form.email" :disabled="!editing" placeholder="电子邮箱" />
+              <el-tag v-if="!editing && form.email" size="small" type="warning" class="review-badge">修改需审核</el-tag>
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12">
             <el-form-item label="身份证号" prop="idCard">
               <el-input v-model="form.idCard" :disabled="!editing" placeholder="18位身份证号" />
               <el-tag v-if="!editing && form.idCard" size="small" type="warning" class="review-badge">修改需审核</el-tag>
@@ -254,6 +260,7 @@ const form = reactive({
   username: '',
   photo: '',
   phone: '',
+  email: '',
   idCard: '',
   college: '',
   major: '',
@@ -275,6 +282,7 @@ const form = reactive({
 
 const rules = {
   phone: [{ pattern: /^1\d{10}$/, message: '请输入正确的手机号', trigger: 'blur' }],
+  email: [{ type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }],
   idCard: [
     { pattern: /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/, message: '请输入正确的身份证号', trigger: 'blur' },
   ],
@@ -285,7 +293,7 @@ const showDifficultyForm = ref(false)
 const diffSubmitting = ref(false)
 const diffForm = reactive({ level: '', reason: '', files: [] })
 
-const reviewFields = ['phone', 'idCard', 'college', 'major', 'className', 'classTeacher', 'classTeacherPhone']
+const reviewFields = ['phone', 'email', 'idCard', 'college', 'major', 'className', 'classTeacher', 'classTeacherPhone']
 
 function difficultyTag(level) {
   const map = { '一般困难': 'warning', '比较困难': 'warning', '特别困难': 'danger' }
@@ -302,6 +310,7 @@ async function fetchInfo() {
       username: data.user?.username || data.username || '',
       photo: data.photo || '',
       phone: data.phone || '',
+      email: data.email || '',
       idCard: data.idCard || data.id_card || '',
       college: data.college || '',
       major: data.major || '',
@@ -409,7 +418,7 @@ async function submitAll() {
 
 function getFieldLabel(key) {
   const map = {
-    phone: '联系方式', idCard: '身份证号', college: '学院', major: '专业',
+    phone: '联系方式', email: '邮箱', idCard: '身份证号', college: '学院', major: '专业',
     className: '班级', campus: '校区', dormitory: '宿舍号',
     classTeacher: '班主任', classTeacherPhone: '班主任联系方式',
   }

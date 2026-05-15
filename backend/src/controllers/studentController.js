@@ -43,19 +43,21 @@ const getStudentInfo = async (req, res) => {
 const updateStudentInfo = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { phone, hobbies, personality, careerGoal } = req.body;
+    const { phone, email, hobbies, personality, careerGoal } = req.body;
 
     const studentInfo = await StudentInfo.findOne({ where: { userId } });
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }
 
-    await studentInfo.update({
-      phone: phone || studentInfo.phone,
-      hobbies: hobbies || studentInfo.hobbies,
-      personality: personality || studentInfo.personality,
-      careerGoal: careerGoal || studentInfo.careerGoal
-    });
+    const updates = {};
+    if (phone !== undefined) updates.phone = phone;
+    if (email !== undefined) updates.email = email;
+    if (hobbies !== undefined) updates.hobbies = hobbies;
+    if (personality !== undefined) updates.personality = personality;
+    if (careerGoal !== undefined) updates.careerGoal = careerGoal;
+
+    await studentInfo.update(updates);
 
     return success(res, studentInfo, '更新成功');
   } catch (err) {

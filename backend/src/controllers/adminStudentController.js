@@ -46,7 +46,7 @@ const getStudentList = async (req, res) => {
     const offset = (parseInt(page) - 1) * parseInt(pageSize);
     const list = await sequelize.query(
       `SELECT u.id, u.username, u.name, u.role, u.status, u.created_at,
-              s.college, s.major, s.grade, s.class_name, s.phone
+              s.college, s.major, s.grade, s.class_name, s.phone, s.email
        FROM users u 
        LEFT JOIN student_info s ON u.id = s.user_id 
        WHERE u.role = 'student' AND ${whereClause}
@@ -210,13 +210,15 @@ const auditInfoChangeRequest = async (req, res) => {
       
       // 字段名映射
       const fieldMap = {
-        'phone': 'phone',
-        'college': 'college',
-        'major': 'major',
-        'className': 'class_name',
-        'grade': 'grade',
-        'campus': 'campus',
-        'dormitory': 'dormitory'
+        '联系方式': 'phone',
+        '邮箱': 'email',
+        '身份证号': 'id_card',
+        '学院': 'college',
+        '专业': 'major',
+        '班级': 'class_name',
+        '年级': 'grade',
+        '校区': 'campus',
+        '宿舍号': 'dormitory'
       };
 
       const dbField = fieldMap[field_name] || field_name;
@@ -374,9 +376,9 @@ const importStudents = async (req, res) => {
           })
           if (!existing.length) {
             await sequelize.query(
-              `INSERT INTO student_info (user_id, college, major, grade, class_name, phone, campus)
-               VALUES (?, ?, ?, ?, ?, ?, ?)`,
-              { replacements: [userId, s.college, s.major, s.grade, s.className || s.class, s.phone || '', s.campus || '华凤校区'], type: sequelize.QueryTypes.INSERT }
+              `INSERT INTO student_info (user_id, college, major, grade, class_name, phone, email, campus)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              { replacements: [userId, s.college, s.major, s.grade, s.className || s.class, s.phone || '', s.email || '', s.campus || '华凤校区'], type: sequelize.QueryTypes.INSERT }
             )
           }
           imported++
@@ -390,6 +392,86 @@ const importStudents = async (req, res) => {
   }
 }
 
+// Excel文件批量导入学生
+const importStudentsFromFile = async (req, res) => {
+  try {
+    if (!req.file) return error(res, '请上传文件', 400);
+
+    const XLSX = require('xlsx');
+    const bcrypt = require('bcryptjs');
+    const path = require('path');
+
+    const workbook = XLSX.readFile(req.file.path);
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+    if (!rows.length) return error(res, '文件无数据', 400);
+
+    const defaultPassword = bcrypt.hashSync('123456', 10);
+    let imported = 0;
+    const errors = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      const rowNum = i + 2; // Excel row (1-based, +1 for header)
+      const studentId = String(r['学号'] || r['studentId'] || r['student_id'] || '');
+      const name = String(r['姓名'] || r['name'] || '');
+      const college = String(r['学院'] || r['college'] || '');
+      const major = String(r['专业'] || r['major'] || '');
+      const grade = String(r['年级'] || r['grade'] || '');
+      const className = String(r['班级'] || r['class'] || r['className'] || r['class_name'] || '');
+      const phone = String(r['联系方式'] || r['phone'] || '');
+      const email = String(r['邮箱'] || r['email'] || '');
+      const campus = String(r['校区'] || r['campus'] || '华凤校区');
+
+      if (!studentId || !name) {
+        errors.push(`第 ${rowNum} 行：学号或姓名为空，已跳过`);
+        continue;
+      }
+
+      try {
+        const [user, created] = await User.findOrCreate({
+          where: { username: studentId },
+          defaults: {
+            username: studentId,
+            password: defaultPassword,
+            name,
+            role: 'student',
+            status: 1,
+          },
+        });
+
+        if (created || user) {
+          const existing = await sequelize.query(
+            'SELECT id FROM student_info WHERE user_id = ?',
+            { replacements: [user.id], type: sequelize.QueryTypes.SELECT }
+          );
+          if (!existing.length) {
+            await sequelize.query(
+              `INSERT INTO student_info (user_id, college, major, grade, class_name, phone, email, campus)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              { replacements: [user.id, college, major, grade, className, phone, email, campus], type: sequelize.QueryTypes.INSERT }
+            );
+          }
+          imported++;
+        }
+      } catch (e) {
+        errors.push(`第 ${rowNum} 行(${name})：${e.message.includes('Duplicate') ? '学号重复' : '导入失败'}`);
+      }
+    }
+
+    return success(res, {
+      imported,
+      total: rows.length,
+      errors: errors.length ? errors : undefined,
+    }, `成功导入 ${imported}/${rows.length} 名学生`);
+  } catch (err) {
+    console.error('Excel批量导入错误:', err);
+    return error(res, 'Excel解析失败，请检查文件格式', 500);
+  }
+};
+
 module.exports = {
   getStudentList,
   getStudentDetail,
@@ -399,4 +481,5 @@ module.exports = {
   getDifficultyApplications,
   auditDifficultyApplication,
   importStudents,
+  importStudentsFromFile,
 };

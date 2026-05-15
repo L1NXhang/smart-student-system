@@ -22,6 +22,10 @@ const StudentInfo = sequelize.define('StudentInfo', {
     type: DataTypes.STRING(20),
     comment: '联系方式'
   },
+  email: {
+    type: DataTypes.STRING(100),
+    comment: '邮箱'
+  },
   idCard: {
     type: DataTypes.STRING(18),
     field: 'id_card',

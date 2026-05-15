@@ -49,6 +49,9 @@ router.use(authMiddleware, adminMiddleware);
 // 批量导入学生
 router.post('/students/import', adminStudentController.importStudents);
 
+// Excel文件批量导入学生
+router.post('/students/import-file', upload.single('file'), adminStudentController.importStudentsFromFile);
+
 // 获取学生列表
 router.get('/students', adminStudentController.getStudentList);
 

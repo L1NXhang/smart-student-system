@@ -237,6 +237,71 @@ exports.deleteQuestion = async (req, res) => {
   } catch (e) { return error(res, e.message, 500) }
 }
 
+// 从Excel批量导入题目
+exports.importQuestionsFromFile = async (req, res) => {
+  try {
+    if (!req.file) return error(res, '请上传文件', 400)
+    const examId = req.params.id
+    const exam = await SafetyExam.findByPk(examId)
+    if (!exam) return error(res, '考试不存在', 404)
+
+    const XLSX = require('xlsx')
+    const workbook = XLSX.readFile(req.file.path)
+    const sheetName = workbook.SheetNames[0]
+    const sheet = workbook.Sheets[sheetName]
+    const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+
+    if (!rows.length) return error(res, '文件无数据', 400)
+
+    const created = []
+    const errors = []
+
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i]
+      const rowNum = i + 2
+      const text = String(r['题目'] || r['题目内容'] || r['text'] || r['question'] || '')
+      const optionA = String(r['选项A'] || r['A'] || r['optionA'] || '')
+      const optionB = String(r['选项B'] || r['B'] || r['optionB'] || '')
+      const optionC = String(r['选项C'] || r['C'] || r['optionC'] || '')
+      const optionD = String(r['选项D'] || r['D'] || r['optionD'] || '')
+      const answer = String(r['正确答案'] || r['答案'] || r['correctAnswer'] || r['answer'] || '').toUpperCase()
+      const score = parseInt(r['分值'] || r['score'] || '10')
+
+      if (!text || !optionA || !optionB || !answer) {
+        errors.push(`第 ${rowNum} 行：题目/选项A/选项B/正确答案不能为空`)
+        continue
+      }
+      if (!['A', 'B', 'C', 'D'].includes(answer)) {
+        errors.push(`第 ${rowNum} 行：正确答案必须为A/B/C/D`)
+        continue
+      }
+
+      try {
+        const question = await SafetyQuestion.create({
+          exam_id: parseInt(examId),
+          question: text,
+          options: JSON.stringify({ A: optionA, B: optionB, C: optionC, D: optionD }),
+          answer,
+          score: isNaN(score) ? 10 : score,
+          sort_order: created.length,
+        })
+        created.push(question)
+      } catch (e) {
+        errors.push(`第 ${rowNum} 行：入库失败`)
+      }
+    }
+
+    return success(res, {
+      imported: created.length,
+      total: rows.length,
+      errors: errors.length ? errors : undefined,
+    }, `成功导入 ${created.length}/${rows.length} 道题目`)
+  } catch (err) {
+    console.error('导入题目错误:', err)
+    return error(res, '文件解析失败，请检查格式', 500)
+  }
+}
+
 exports.getIncidentList = async (req, res) => {
   try {
     const list = await IncidentReport.findAll({

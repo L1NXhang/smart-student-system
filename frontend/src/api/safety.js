@@ -47,3 +47,10 @@ export function reportIncident(data) {
 export function getIncidents() {
   return api.get('/safety/incidents')
 }
+
+export function importExamQuestions(examId, formData) {
+  return api.post(`/safety/admin/exams/${examId}/questions/import`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 60000,
+  })
+}

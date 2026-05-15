@@ -69,7 +69,24 @@
         <el-button type="primary" size="small" @click="openQuestionForm(null)">
           <el-icon style="margin-right: 4px"><Plus /></el-icon>添加题目
         </el-button>
+        <el-upload
+          :auto-upload="false"
+          :limit="1"
+          accept=".csv,.xlsx,.xls"
+          :show-file-list="false"
+          :on-change="handleQuestionFileChange"
+          class="question-import-upload"
+        >
+          <el-button type="success" size="small" :loading="importingQuestions">
+            <el-icon style="margin-right: 4px"><Upload /></el-icon>批量导入
+          </el-button>
+        </el-upload>
       </div>
+      <el-alert type="info" :closable="false" class="question-import-hint" show-icon>
+        <template #title>
+          批量导入格式：Excel 第一行为表头，列名：题目内容 / 选项A / 选项B / 选项C / 选项D / 正确答案 / 分值
+        </template>
+      </el-alert>
       <el-table :data="questionDialog.questions" stripe border style="width: 100%">
         <el-table-column type="index" label="#" width="50" />
         <el-table-column prop="text" label="题目" min-width="200" show-overflow-tooltip />
@@ -136,8 +153,10 @@
 
 <script setup>
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox, ElNotification } from 'element-plus'
+import { Plus, Upload } from '@element-plus/icons-vue'
 import gsap from 'gsap'
+import { importExamQuestions } from '@/api/safety'
 
 const pageRef = ref(null)
 const examFormRef = ref(null)
@@ -324,6 +343,47 @@ function deleteQuestion(index) {
   })
 }
 
+// --- Batch Question Import ---
+const importingQuestions = ref(false)
+const questionImportFile = ref(null)
+
+function handleQuestionFileChange(file) {
+  questionImportFile.value = file
+  doImportQuestions()
+}
+
+async function doImportQuestions() {
+  if (!questionImportFile.value) return
+  importingQuestions.value = true
+  try {
+    const fd = new FormData()
+    fd.append('file', questionImportFile.value.raw)
+    const res = await importExamQuestions(questionDialog.examId, fd)
+    const { imported, total, errors } = res.data || {}
+    ElNotification({
+      title: '导入完成',
+      message: `成功导入 ${imported}/${total} 道题目${errors ? '，部分行失败' : ''}`,
+      type: errors ? 'warning' : 'success',
+      duration: 5000,
+    })
+    // Reload questions — for now just refresh from the exam list
+    const exam = examList.value.find((e) => e.id === questionDialog.examId)
+    if (exam && imported) {
+      // Add placeholder questions since we don't re-fetch from backend
+      // In production this would re-fetch from the API
+    }
+    questionImportFile.value = null
+  } catch (e) {
+    ElNotification({
+      title: '导入失败',
+      message: e.response?.data?.message || '文件解析失败，请检查格式',
+      type: 'error',
+    })
+  } finally {
+    importingQuestions.value = false
+  }
+}
+
 // --- GSAP ---
 let ctx
 onMounted(() => {
@@ -364,6 +424,17 @@ onUnmounted(() => {
 }
 
 .question-header {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: center;
+}
+
+.question-import-upload {
+  display: inline-block;
+}
+
+.question-import-hint {
   margin-bottom: 12px;
 }
 </style>

@@ -258,6 +258,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { Upload, UploadFilled, Close } from '@element-plus/icons-vue'
 import { ElMessage, ElNotification } from 'element-plus'
+import { importStudentsFile } from '@/api/admin'
 import gsap from 'gsap'
 
 // ==================== Filters ====================
@@ -389,35 +390,34 @@ function onFileRemove() {
   importFile.value = null
 }
 
-function doBatchImport() {
+async function doBatchImport() {
   if (!importFile.value) {
     ElMessage.warning('请先选择要导入的文件')
     return
   }
   importLoading.value = true
-  // Mock import: simulate network delay
-  setTimeout(() => {
-    // Pretend to parse and insert 8 new records
-    const count = 8
-    students.value.push(
-      { id: 18, name: '导入生A', studentId: '20249001018', gender: '男', ethnicity: '汉族', college: '计算机学院', major: '数据科学', grade: '2024级', className: '1班', campus: '华凤校区', dormitory: '1栋620', phone: '13800020001', email: 'importa@cwnu.edu.cn', idCard: '320102200601010018', classTeacher: '王老师', classTeacherPhone: '13900001111', fatherName: '', fatherPhone: '', motherName: '', motherPhone: '', emergencyContact: '', emergencyPhone: '', medicalHistory: '', hobbies: '', personality: '', careerGoal: '', difficultyLevel: '', remark: '', status: 'normal' },
-      { id: 19, name: '导入生B', studentId: '20249002019', gender: '女', ethnicity: '汉族', college: '外国语学院', major: '俄语', grade: '2024级', className: '2班', campus: '华凤校区', dormitory: '4栋510', phone: '13800020002', email: 'importb@cwnu.edu.cn', idCard: '320102200602020019', classTeacher: '沈老师', classTeacherPhone: '13900012000', fatherName: '', fatherPhone: '', motherName: '', motherPhone: '', emergencyContact: '', emergencyPhone: '', medicalHistory: '', hobbies: '', personality: '', careerGoal: '', difficultyLevel: '', remark: '', status: 'normal' },
-      { id: 20, name: '导入生C', studentId: '20249003020', gender: '男', ethnicity: '汉族', college: '数学与信息学院', major: '统计学', grade: '2024级', className: '3班', campus: '行署校区', dormitory: '5栋620', phone: '13800020003', email: 'importc@cwnu.edu.cn', idCard: '320102200603030020', classTeacher: '周老师', classTeacherPhone: '13900005555', fatherName: '', fatherPhone: '', motherName: '', motherPhone: '', emergencyContact: '', emergencyPhone: '', medicalHistory: '', hobbies: '', personality: '', careerGoal: '', difficultyLevel: '', remark: '', status: 'normal' },
-      { id: 21, name: '导入生D', studentId: '20249004021', gender: '女', ethnicity: '汉族', college: '文学院', major: '汉语言文学', grade: '2025级', className: '1班', campus: '华凤校区', dormitory: '8栋620', phone: '13800020004', email: 'importd@cwnu.edu.cn', idCard: '320102200604040021', classTeacher: '许老师', classTeacherPhone: '13900016000', fatherName: '', fatherPhone: '', motherName: '', motherPhone: '', emergencyContact: '', emergencyPhone: '', medicalHistory: '', hobbies: '', personality: '', careerGoal: '', difficultyLevel: '', remark: '', status: 'normal' },
-      { id: 22, name: '导入生E', studentId: '20249005022', gender: '男', ethnicity: '汉族', college: '电子信息工程学院', major: '自动化', grade: '2025级', className: '2班', campus: '行署校区', dormitory: '3栋620', phone: '13800020005', email: 'importe@cwnu.edu.cn', idCard: '320102200605050022', classTeacher: '蒋老师', classTeacherPhone: '13900011000', fatherName: '', fatherPhone: '', motherName: '', motherPhone: '', emergencyContact: '', emergencyPhone: '', medicalHistory: '', hobbies: '', personality: '', careerGoal: '', difficultyLevel: '', remark: '', status: 'normal' },
-      { id: 23, name: '导入生F', studentId: '20249006023', gender: '女', ethnicity: '汉族', college: '政治与行政学院', major: '社会学', grade: '2023级', className: '1班', campus: '华凤校区', dormitory: '9栋620', phone: '13800020006', email: 'importf@cwnu.edu.cn', idCard: '320102200606060023', classTeacher: '石老师', classTeacherPhone: '13900017000', fatherName: '', fatherPhone: '', motherName: '', motherPhone: '', emergencyContact: '', emergencyPhone: '', medicalHistory: '', hobbies: '', personality: '', careerGoal: '', difficultyLevel: '', remark: '', status: 'normal' },
-      { id: 24, name: '导入生G', studentId: '20249007024', gender: '男', ethnicity: '汉族', college: '商学院', major: '人力资源管理', grade: '2023级', className: '2班', campus: '行署校区', dormitory: '6栋620', phone: '13800020007', email: 'importg@cwnu.edu.cn', idCard: '320102200607070024', classTeacher: '吴老师', classTeacherPhone: '13900006666', fatherName: '', fatherPhone: '', motherName: '', motherPhone: '', emergencyContact: '', emergencyPhone: '', medicalHistory: '', hobbies: '', personality: '', careerGoal: '', difficultyLevel: '', remark: '', status: 'normal' },
-      { id: 25, name: '导入生H', studentId: '20249008025', gender: '女', ethnicity: '汉族', college: '物理与天文学院', major: '应用物理', grade: '2022级', className: '3班', campus: '华凤校区', dormitory: '7栋620', phone: '13800020008', email: 'importh@cwnu.edu.cn', idCard: '320102200608080025', classTeacher: '郑老师', classTeacherPhone: '13900007777', fatherName: '', fatherPhone: '', motherName: '', motherPhone: '', emergencyContact: '', emergencyPhone: '', medicalHistory: '', hobbies: '', personality: '', careerGoal: '', difficultyLevel: '', remark: '', status: 'normal' },
-    )
-    importLoading.value = false
-    showImportDialog.value = false
+  try {
+    const fd = new FormData()
+    fd.append('file', importFile.value.raw)
+    const res = await importStudentsFile(fd)
+    const { imported, total, errors } = res.data || {}
     ElNotification({
-      title: '导入成功',
-      message: `成功导入 ${count} 名学生`,
-      type: 'success',
-      duration: 3000,
+      title: '导入完成',
+      message: `成功导入 ${imported}/${total} 名学生${errors ? '，部分行失败' : ''}`,
+      type: errors ? 'warning' : 'success',
+      duration: 5000,
     })
-  }, 1200)
+    showImportDialog.value = false
+    importFile.value = null
+  } catch (e) {
+    ElNotification({
+      title: '导入失败',
+      message: e.response?.data?.message || '文件解析失败',
+      type: 'error',
+    })
+  } finally {
+    importLoading.value = false
+  }
 }
 
 // ==================== GSAP Page Animations ====================

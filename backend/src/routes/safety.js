@@ -1,7 +1,16 @@
 const express = require('express')
 const router = express.Router()
+const multer = require('multer')
+const path = require('path')
 const c = require('../controllers/safetyController')
 const { authMiddleware, adminMiddleware } = require('../middlewares/auth')
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, path.join(__dirname, '../../uploads')),
+    filename: (req, file, cb) => cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname)),
+  }),
+})
 
 // 学生端
 router.post('/late-return', authMiddleware, c.submitLateReturn)
@@ -25,6 +34,7 @@ router.put('/admin/leave/:id', authMiddleware, adminMiddleware, c.auditLeave)
 router.post('/admin/exams', authMiddleware, adminMiddleware, c.createExam)
 router.delete('/admin/exams/:id', authMiddleware, adminMiddleware, c.deleteExam)
 router.post('/admin/exams/:id/questions', authMiddleware, adminMiddleware, c.createQuestion)
+router.post('/admin/exams/:id/questions/import', authMiddleware, adminMiddleware, upload.single('file'), c.importQuestionsFromFile)
 router.put('/admin/questions/:id', authMiddleware, adminMiddleware, c.updateQuestion)
 router.delete('/admin/questions/:id', authMiddleware, adminMiddleware, c.deleteQuestion)
 router.get('/admin/incidents', authMiddleware, adminMiddleware, c.getIncidentList)
