@@ -18,16 +18,6 @@
           </h1>
           <p class="system-subtitle">Smart Student Affairs System</p>
         </div>
-        <div class="auth-illustration">
-          <svg viewBox="0 0 300 240" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="60" y="40" width="180" height="140" rx="14" fill="currentColor" fill-opacity="0.07"/>
-            <rect x="80" y="65" width="140" height="8" rx="4" fill="currentColor" fill-opacity="0.2"/>
-            <circle cx="130" cy="150" r="20" fill="currentColor" fill-opacity="0.15"/>
-            <path d="M130 140v20m-10-10h20" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
-            <rect x="75" y="105" width="60" height="4" rx="2" fill="currentColor" fill-opacity="0.1"/>
-            <circle cx="165" cy="107" r="10" fill="currentColor" fill-opacity="0.08"/>
-          </svg>
-        </div>
         <p class="auth-slogan">
           <DecryptedText text="首次登录，请修改密码" :speed="50" />
         </p>
@@ -338,18 +328,7 @@ onMounted(() => {
   font-weight: 300;
 }
 
-.auth-illustration {
-  width: 200px;
-  margin: 24px 0;
-  position: relative;
-  z-index: 1;
-  color: #fff;
-}
 
-.auth-illustration svg {
-  width: 100%;
-  height: auto;
-}
 
 .auth-slogan {
   font-size: 13px;
@@ -485,9 +464,6 @@ onMounted(() => {
     padding: 32px 24px;
   }
 
-  .auth-illustration {
-    display: none;
-  }
 
   .system-name {
     font-size: 22px;

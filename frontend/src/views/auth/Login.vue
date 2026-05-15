@@ -22,20 +22,6 @@
           <p class="system-subtitle">Smart Student Affairs System</p>
         </div>
 
-        <div class="auth-illustration" ref="illusRef">
-          <svg viewBox="0 0 300 240" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="60" y="40" width="180" height="140" rx="14" stroke="currentColor" stroke-width="1.5" stroke-opacity="0.2" fill="currentColor" fill-opacity="0.06"/>
-            <rect x="80" y="65" width="140" height="8" rx="4" fill="currentColor" fill-opacity="0.2"/>
-            <rect x="80" y="83" width="100" height="6" rx="3" fill="currentColor" fill-opacity="0.12"/>
-            <rect x="80" y="97" width="120" height="6" rx="3" fill="currentColor" fill-opacity="0.12"/>
-            <circle cx="135" cy="150" r="22" fill="currentColor" fill-opacity="0.12"/>
-            <path d="M135 139v22m-11-11h22" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
-            <circle cx="105" cy="200" r="10" fill="currentColor" fill-opacity="0.08"/>
-            <circle cx="150" cy="206" r="7" fill="currentColor" fill-opacity="0.06"/>
-            <circle cx="190" cy="198" r="10" fill="currentColor" fill-opacity="0.08"/>
-          </svg>
-        </div>
-
         <p class="auth-slogan" ref="sloganRef">
           <BlurText text="以学生为本，用智慧服务成长" :duration="0.8" :stagger="0.06" />
         </p>
@@ -138,7 +124,6 @@ const loginBtnRef = ref(null)
 const formRef = ref(null)
 const formWrapperRef = ref(null)
 const logoRef = ref(null)
-const illusRef = ref(null)
 const sloganRef = ref(null)
 const ring1Ref = ref(null)
 const ring2Ref = ref(null)
@@ -249,10 +234,6 @@ onMounted(() => {
   tl.fromTo(logoRef.value, { y: -20, opacity: 0 },
     { y: 0, opacity: 1, duration: 0.5, ease: 'back.out(1.7)' }, '-=0.3')
 
-  // Illustration fade up
-  tl.fromTo(illusRef.value, { y: 15, opacity: 0 },
-    { y: 0, opacity: 1, duration: 0.5 }, '-=0.2')
-
   // Slogan
   tl.fromTo(sloganRef.value, { opacity: 0 },
     { opacity: 1, duration: 0.4 }, '-=0.1')
@@ -323,7 +304,7 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 50px 36px;
+  padding: 40px 36px;
   position: relative;
   overflow: hidden;
 }
@@ -343,14 +324,12 @@ onUnmounted(() => {
 .ring-2 { width: 220px; height: 220px; top: 40%; left: -60px; }
 .ring-3 { width: 160px; height: 160px; bottom: -30px; right: 40px; border-color: rgba(255,255,255,0.06); }
 
-.auth-logo { text-align: center; position: relative; z-index: 1; }
-.logo-icon { width: 80px; height: 80px; margin: 0 auto 16px; }
-.school-logo { width: 100%; height: 100%; object-fit: contain; border-radius: 12px; }
-.system-name { font-size: 26px; font-weight: 700; margin: 0 0 6px; letter-spacing: 2px; }
+.auth-logo { text-align: center; position: relative; z-index: 1; flex: 0.618; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.logo-icon { width: 120px; height: 120px; margin: 0 auto 20px; }
+.school-logo { width: 100%; height: 100%; object-fit: contain; border-radius: 16px; }
+.system-name { font-size: 28px; font-weight: 700; margin: 0 0 8px; letter-spacing: 3px; }
 .system-subtitle { font-size: 13px; opacity: 0.7; margin: 0; letter-spacing: 1px; font-weight: 300; }
-.auth-illustration { width: 200px; margin: 28px 0; position: relative; z-index: 1; color: #fff; }
-.auth-illustration svg { width: 100%; height: auto; }
-.auth-slogan { font-size: 13px; opacity: 0.65; margin: 0; position: relative; z-index: 1; }
+.auth-slogan { font-size: 13px; opacity: 0.65; margin: 0; position: relative; z-index: 1; flex: 0.382; display: flex; align-items: flex-end; padding-bottom: 24px; }
 
 /* ===== Right Panel ===== */
 .auth-right {
@@ -434,8 +413,8 @@ onUnmounted(() => {
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
   .auth-card { flex-direction: column; width: 100%; max-width: 400px; min-height: auto; }
-  .auth-left { flex: none; padding: 32px 24px; }
-  .auth-illustration { display: none; }
+  .auth-left { flex: none; padding: 40px 24px; }
+  .logo-icon { width: 80px; height: 80px; }
   .system-name { font-size: 22px; }
   .auth-right { padding: 32px 28px; }
   .bg-particles { display: none; }
