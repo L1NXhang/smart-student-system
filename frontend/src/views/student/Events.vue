@@ -122,8 +122,8 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Clock, Location, User } from '@element-plus/icons-vue'
-import {
 import { FadeContent, GradientText } from '@/components/react-bits'
+import {
   getEvents, getEvent, registerEvent, cancelEvent, getMyEventRegistrations,
 } from '@/api/message'
 

@@ -22,7 +22,7 @@ onMounted(() => {
     ([entry]) => {
       if (entry.isIntersecting) {
         setTimeout(() => { isRevealed.value = true }, props.delay * 1000)
-        if (props.once) observer?.unobserve(elRef.value!)
+        if (props.once) observer.unobserve(elRef.value)
       } else if (!props.once) {
         isRevealed.value = false
       }
