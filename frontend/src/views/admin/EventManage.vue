@@ -67,6 +67,14 @@
             <el-option label="社团活动" value="社团活动" />
           </el-select>
         </el-form-item>
+        <el-form-item label="学时类型" prop="hoursType">
+          <el-select v-model="dialog.form.hoursType" placeholder="请选择学时类型（可选）" clearable style="width: 100%">
+            <el-option label="文体学时" value="文体学时" />
+            <el-option label="思想素质学时" value="思想素质学时" />
+            <el-option label="技能特长学时" value="技能特长学时" />
+            <el-option label="志愿服务学时" value="志愿服务学时" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="活动时间" prop="eventTime">
           <el-date-picker
             v-model="dialog.form.eventTime"
@@ -220,6 +228,7 @@ const dialog = reactive({
   form: {
     title: '',
     type: '',
+    hoursType: '',
     eventTime: '',
     location: '',
     description: '',
@@ -250,6 +259,7 @@ function openCreateDialog() {
   dialog.form = {
     title: '',
     type: '',
+    hoursType: '',
     eventTime: '',
     location: '',
     description: '',

@@ -45,7 +45,7 @@ const getStudentList = async (req, res) => {
     // 获取列表
     const offset = (parseInt(page) - 1) * parseInt(pageSize);
     const list = await sequelize.query(
-      `SELECT u.id, u.username, u.name, u.role, u.status, u.created_at,
+      `SELECT u.id, u.username, u.name, u.role, u.status, u.department, u.department_role, u.created_at,
               s.college, s.major, s.grade, s.class_name, s.phone, s.email
        FROM users u 
        LEFT JOIN student_info s ON u.id = s.user_id 
@@ -482,4 +482,35 @@ module.exports = {
   auditDifficultyApplication,
   importStudents,
   importStudentsFromFile,
+
+  // 设置学生部门角色
+  setDepartmentRole: async (req, res) => {
+    try {
+      const { id } = req.params
+      const { department, departmentRole } = req.body
+      const user = await User.findByPk(id)
+      if (!user) return error(res, '用户不存在', 404)
+      if (user.role !== 'student') return error(res, '只能为学-生设置部门角色', 400)
+      await user.update({ department: department || null, departmentRole: departmentRole || null })
+      return success(res, {
+        id: user.id, name: user.name, department: user.department, departmentRole: user.departmentRole,
+      }, department ? '部门角色已设置' : '部门角色已清除')
+    } catch (e) { return error(res, e.message, 500) }
+  },
+
+  // 获取部门列表
+  getDepartments: async (req, res) => {
+    try {
+      const departments = [
+        { value: '纪检部', label: '纪检部' },
+        { value: '学习发展部', label: '学习发展部' },
+        { value: '宣传部', label: '宣传部' },
+        { value: '素质发展部', label: '素质发展部' },
+        { value: '青年志愿者协会', label: '青年志愿者协会（青志协）' },
+        { value: '办公室', label: '办公室' },
+        { value: '组织部', label: '组织部' },
+      ]
+      return success(res, departments)
+    } catch (e) { return error(res, e.message, 500) }
+  },
 };

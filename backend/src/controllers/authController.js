@@ -6,7 +6,7 @@ const { success, error } = require('../utils/response');
 // 生成 JWT Token
 const generateToken = (user) => {
   return jwt.sign(
-    { id: user.id, username: user.username, role: user.role },
+    { id: user.id, username: user.username, role: user.role, departmentRole: user.departmentRole },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN }
   );
@@ -91,7 +91,9 @@ const login = async (req, res) => {
         id: user.id,
         username: user.username,
         name: user.name,
-        role: user.role
+        role: user.role,
+        department: user.department,
+        departmentRole: user.departmentRole,
       }
     }, '登录成功');
   } catch (err) {

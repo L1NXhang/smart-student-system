@@ -1,7 +1,7 @@
 <template>
   <div class="auth-container">
     <!-- Aurora 极光背景 -->
-    <AuroraBackground :speed="0.4" color1="#67a0f4" color2="#90c7a0" color3="#c4a0d8" />
+    <AuroraBackground :speed="0.6" :intensity="1.4" color1="#4fc3f7" color2="#66bb6a" color3="#ab47bc" color4="#64ffda" />
 
     <div class="auth-card" ref="cardRef">
       <!-- 左侧品牌区 -->

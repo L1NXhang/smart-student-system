@@ -30,6 +30,17 @@ const User = sequelize.define('User', {
     defaultValue: 'student',
     comment: '角色：student-学生, admin-管理员'
   },
+  department: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    comment: '所属部门'
+  },
+  departmentRole: {
+    type: DataTypes.ENUM('head', 'member'),
+    allowNull: true,
+    field: 'department_role',
+    comment: '部门角色：head-部长, member-成员'
+  },
   status: {
     type: DataTypes.TINYINT,
     allowNull: false,

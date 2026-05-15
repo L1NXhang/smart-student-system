@@ -5,6 +5,7 @@ const Event = sequelize.define('Event', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   title: { type: DataTypes.STRING(100), allowNull: false },
   event_type: { type: DataTypes.ENUM('academic', 'sports', 'volunteer', 'culture', 'other'), defaultValue: 'other' },
+  hours_type: { type: DataTypes.STRING(20), allowNull: true, field: 'hours_type', comment: '学时类型' },
   event_date: { type: DataTypes.DATE },
   location: { type: DataTypes.STRING(255) },
   description: { type: DataTypes.TEXT },

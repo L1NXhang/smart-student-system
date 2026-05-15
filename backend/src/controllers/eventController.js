@@ -74,12 +74,19 @@ exports.getMyRegistrations = async (req, res) => {
   } catch (e) { return error(res, e.message, 500) }
 }
 
-// Admin
+// Admin / Department Head
 exports.createEvent = async (req, res) => {
   try {
+    // Permission: admin or department head
+    const user = req.user
+    if (user.role !== 'admin' && user.departmentRole !== 'head') {
+      return error(res, '仅管理员和部门部长可以发布活动', 403)
+    }
+
     const event = await Event.create({
       title: req.body.title,
       event_type: req.body.eventType || req.body.event_type || 'other',
+      hours_type: req.body.hoursType || req.body.hours_type || null,
       event_date: req.body.eventDate || req.body.event_date,
       location: req.body.location,
       description: req.body.description,
