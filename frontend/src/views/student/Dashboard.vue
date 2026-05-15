@@ -113,13 +113,13 @@ onMounted(async () => {
       getScholarshipApplications(),
       getUnreadAnnounceCount(),
     ])
-    announcements.value = a?.list || []
-    events.value = e?.list || []
-    const list = s?.list || []
-    scholarshipCount.value = s?.total || list.length
+    announcements.value = a?.data?.list || a?.list || []
+    events.value = e?.data?.list || e?.list || []
+    const list = s?.data?.list || s?.list || []
+    scholarshipCount.value = s?.data?.total || s?.total || list.length
     pendingCount.value = list.filter(i => i.status === 'pending').length
-    unreadCount.value = u?.unread ?? 0
-    eventCount.value = e?.total || events.value.length
+    unreadCount.value = u?.unread ?? u?.data?.unread ?? 0
+    eventCount.value = e?.data?.total || e?.total || events.value.length
   } catch { loadError.value = true }
   finally { loading.value = false }
 })
