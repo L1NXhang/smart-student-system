@@ -51,3 +51,20 @@ export function cancelEvent(id) {
 export function getMyEventRegistrations() {
   return api.get('/events/my-registrations')
 }
+
+// Admin event management
+export function createEvent(data) {
+  return api.post('/events', data)
+}
+
+export function updateEvent(id, data) {
+  return api.put(`/events/${id}`, data)
+}
+
+export function deleteEvent(id) {
+  return api.delete(`/events/${id}`)
+}
+
+export function getEventRegistrations(id) {
+  return api.get(`/events/${id}/registrations`)
+}

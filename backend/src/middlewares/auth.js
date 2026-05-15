@@ -25,4 +25,12 @@ const adminMiddleware = (req, res, next) => {
   next();
 };
 
-module.exports = { authMiddleware, adminMiddleware };
+// Allow admin or department head
+const eventPublisherMiddleware = (req, res, next) => {
+  if (req.user.role !== 'admin' && req.user.departmentRole !== 'head') {
+    return res.status(403).json({ code: 403, message: '仅管理员和部门部长可发布活动' });
+  }
+  next();
+};
+
+module.exports = { authMiddleware, adminMiddleware, eventPublisherMiddleware };
