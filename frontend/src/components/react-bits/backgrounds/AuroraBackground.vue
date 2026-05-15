@@ -65,7 +65,7 @@ function draw() {
     const fade = Math.max(0, dist) * Math.max(0, 1 - Math.abs(py - 0.3) * 2.5)
 
     if (fade > 0.01) {
-      const alpha = fade * 0.18 * I * shimmer
+      const alpha = fade * 0.28 * I * shimmer
       const grad = ctx.createLinearGradient(xCenter - spread, y, xCenter + spread, y)
       grad.addColorStop(0, `rgba(${c1[0]},${c1[1]},${c1[2]},0)`)
       grad.addColorStop(0.3, `rgba(${c1[0]},${c1[1]},${c1[2]},${alpha * 0.5})`)
@@ -95,7 +95,7 @@ function draw() {
     const fade = Math.max(0, dist) * Math.max(0, 1 - Math.abs(py - 0.55) * 2.2)
 
     if (fade > 0.01) {
-      const alpha = fade * 0.16 * I * shimmer
+      const alpha = fade * 0.24 * I * shimmer
       const grad = ctx.createLinearGradient(xCenter - spread, y, xCenter + spread, y)
       grad.addColorStop(0, `rgba(${c2[0]},${c2[1]},${c2[2]},0)`)
       grad.addColorStop(0.4, `rgba(${c3[0]},${c3[1]},${c3[2]},${alpha * 0.4})`)
@@ -124,7 +124,7 @@ function draw() {
     const fade = Math.max(0, dist) * Math.max(0, 1 - Math.abs(py - 0.15) * 3.0)
 
     if (fade > 0.01) {
-      const alpha = fade * 0.12 * I * shimmer
+      const alpha = fade * 0.18 * I * shimmer
       const grad = ctx.createLinearGradient(xCenter - spread, y, xCenter + spread, y)
       grad.addColorStop(0, `rgba(${c3[0]},${c3[1]},${c3[2]},0)`)
       grad.addColorStop(0.5, `rgba(${c3[0]},${c3[1]},${c3[2]},${alpha})`)
