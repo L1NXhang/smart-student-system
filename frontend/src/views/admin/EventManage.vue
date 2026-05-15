@@ -163,6 +163,15 @@ const rules = {
 const eventList = ref([])
 const canPublish = computed(() => userStore.isAdmin || userStore.isDepartmentHead)
 
+const typeLabelMap = { academic: '学术讲座', sports: '文体活动', volunteer: '志愿服务', culture: '社团活动', other: '其他' }
+
+function formatDate(d) {
+  if (!d) return ''
+  const t = new Date(d)
+  const pad = n => String(n).padStart(2, '0')
+  return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())} ${pad(t.getHours())}:${pad(t.getMinutes())}`
+}
+
 async function fetchEvents() {
   loading.value = true
   try {
@@ -170,14 +179,14 @@ async function fetchEvents() {
     eventList.value = (res.data?.list || res.list || []).map(e => ({
       id: e.id,
       title: e.title,
-      type: e.event_type === 'academic' ? '学术讲座' : e.event_type === 'sports' ? '文体活动' : e.event_type === 'volunteer' ? '志愿服务' : e.event_type === 'culture' ? '社团活动' : '其他',
+      type: typeLabelMap[e.event_type] || '其他',
       hoursType: e.hours_type || '',
-      eventTime: e.event_date || '',
+      eventTime: formatDate(e.event_date),
       location: e.location || '',
       description: e.description || '',
       quota: e.quota || 0,
       registered: e.registrationCount || 0,
-      deadline: e.deadline || '',
+      deadline: formatDate(e.deadline),
       status: e.status === 0 ? '已取消' : '报名中',
     }))
   } catch (e) {
