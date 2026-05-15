@@ -85,6 +85,14 @@
         <el-table-column prop="major" label="专业" min-width="150" />
         <el-table-column prop="grade" label="年级" width="100" />
         <el-table-column prop="className" label="班级" width="100" />
+        <el-table-column label="部门" width="140">
+          <template #default="{ row }">
+            <el-tag v-if="row.department" :type="row.departmentRole === 'head' ? 'warning' : 'info'" size="small">
+              {{ row.department }}{{ row.departmentRole === 'head' ? '(部长)' : '' }}
+            </el-tag>
+            <span v-else style="color:#c0c4cc">-</span>
+          </template>
+        </el-table-column>
         <el-table-column label="状态" width="90">
           <template #default="{ row }">
             <el-tag :type="statusTagMap[row.status]?.type" size="small">
@@ -208,6 +216,41 @@
                   <el-descriptions-item label="备注">{{ currentStudent.remark || '无' }}</el-descriptions-item>
                 </el-descriptions>
               </el-tab-pane>
+
+              <!-- Tab 6: 部门角色 -->
+              <el-tab-pane label="部门角色" name="department">
+                <div class="dept-section">
+                  <el-form label-width="80px" @submit.prevent>
+                    <el-form-item label="所属部门">
+                      <el-select v-model="deptForm.department" placeholder="选择部门" clearable style="width: 240px">
+                        <el-option v-for="d in departments" :key="d.value" :label="d.label" :value="d.value" />
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item label="部门角色">
+                      <el-select v-model="deptForm.departmentRole" placeholder="选择角色" clearable style="width: 240px">
+                        <el-option label="部长" value="head" />
+                        <el-option label="成员" value="member" />
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item>
+                      <el-button type="primary" size="small" @click="saveDepartment" :loading="deptSaving">
+                        保存
+                      </el-button>
+                      <el-button v-if="deptForm.department" size="small" @click="clearDepartment" :loading="deptSaving">
+                        清除部门角色
+                      </el-button>
+                    </el-form-item>
+                  </el-form>
+                  <div v-if="currentStudent.department" class="dept-current">
+                    <el-tag type="success" size="default">
+                      {{ currentStudent.department }}
+                    </el-tag>
+                    <el-tag :type="currentStudent.departmentRole === 'head' ? 'warning' : 'info'" size="default" style="margin-left:8px">
+                      {{ currentStudent.departmentRole === 'head' ? '部长' : currentStudent.departmentRole === 'member' ? '成员' : '未知' }}
+                    </el-tag>
+                  </div>
+                </div>
+              </el-tab-pane>
             </el-tabs>
           </div>
         </div>
@@ -255,10 +298,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { Upload, UploadFilled, Close } from '@element-plus/icons-vue'
 import { ElMessage, ElNotification } from 'element-plus'
 import { importStudentsFile } from '@/api/admin'
+import api from '@/api'
 import gsap from 'gsap'
 import { FadeContent, GradientText } from '@/components/react-bits'
 
@@ -346,9 +390,60 @@ const showDetail = ref(false)
 const currentStudent = ref(null)
 const detailTab = ref('basic')
 
+// Department management
+const departments = ref([
+  { value: '纪检部', label: '纪检部' },
+  { value: '学习发展部', label: '学习发展部' },
+  { value: '宣传部', label: '宣传部' },
+  { value: '素质发展部', label: '素质发展部' },
+  { value: '青年志愿者协会', label: '青年志愿者协会（青志协）' },
+  { value: '办公室', label: '办公室' },
+  { value: '组织部', label: '组织部' },
+])
+const deptForm = reactive({ department: '', departmentRole: '' })
+const deptSaving = ref(false)
+
+async function saveDepartment() {
+  if (!currentStudent.value || !deptForm.department || !deptForm.departmentRole) {
+    ElMessage.warning('请选择部门和角色')
+    return
+  }
+  deptSaving.value = true
+  try {
+    await api.put(`/admin/students/${currentStudent.value.id}/department`, {
+      department: deptForm.department,
+      departmentRole: deptForm.departmentRole,
+    })
+    currentStudent.value.department = deptForm.department
+    currentStudent.value.departmentRole = deptForm.departmentRole
+    ElMessage.success('部门角色设置成功')
+  } catch (e) {
+    ElMessage.error(e.response?.data?.message || '设置失败')
+  } finally { deptSaving.value = false }
+}
+
+async function clearDepartment() {
+  deptSaving.value = true
+  try {
+    await api.put(`/admin/students/${currentStudent.value.id}/department`, {
+      department: null,
+      departmentRole: null,
+    })
+    currentStudent.value.department = null
+    currentStudent.value.departmentRole = null
+    deptForm.department = ''
+    deptForm.departmentRole = ''
+    ElMessage.success('部门角色已清除')
+  } catch (e) {
+    ElMessage.error(e.response?.data?.message || '清除失败')
+  } finally { deptSaving.value = false }
+}
+
 function openDetail(row) {
   currentStudent.value = row
   detailTab.value = 'basic'
+  deptForm.department = row.department || ''
+  deptForm.departmentRole = row.departmentRole || ''
   showDetail.value = true
   nextTick(() => {
     gsap.from('.detail-panel', {
@@ -617,5 +712,16 @@ onMounted(() => {
 /* Table row hover cursor */
 :deep(.table-row) {
   cursor: pointer;
+}
+
+/* Department */
+.dept-section {
+  padding: 8px 0;
+}
+.dept-current {
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
 }
 </style>
