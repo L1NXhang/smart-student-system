@@ -85,6 +85,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UserFilled } from '@element-plus/icons-vue'
 import { submitFeedback, getMyFeedbacks } from '@/api/message'
+import { FadeContent, GradientText } from '@/components/react-bits'
 
 const formRef = ref(null)
 const loading = ref(false)

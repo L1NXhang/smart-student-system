@@ -165,6 +165,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import gsap from 'gsap'
+import { FadeContent, GradientText } from '@/components/react-bits'
 
 const page = ref(1)
 const pageSize = ref(10)

@@ -108,6 +108,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import gsap from 'gsap'
+import { FadeContent, GradientText } from '@/components/react-bits'
 
 const activeTab = ref('pending')
 const page = ref(1)

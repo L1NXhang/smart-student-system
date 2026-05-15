@@ -1,5 +1,6 @@
 <template>
   <div class="exam-manage-page" ref="pageRef">
+    <FadeContent>
     <el-card shadow="never" class="page-card">
       <template #header>
         <div class="page-header">
@@ -148,6 +149,7 @@
         <el-button type="primary" @click="submitQuestion">确认</el-button>
       </template>
     </el-dialog>
+    </FadeContent>
   </div>
 </template>
 

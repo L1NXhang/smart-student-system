@@ -79,6 +79,7 @@ import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import gsap from 'gsap'
+import { FadeContent, GradientText } from '@/components/react-bits'
 
 const pageRef = ref(null)
 const uploadRef = ref(null)

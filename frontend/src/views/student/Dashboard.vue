@@ -1,8 +1,14 @@
 <template>
   <div class="dashboard">
+    <FadeContent>
+    <ParticlesBackground :count="40" color="rgba(64, 158, 255, 0.08)" :speed="0.2" />
     <div class="page-header">
-      <h2>工作台</h2>
-      <p>欢迎回来，快速查看你的学习与生活动态</p>
+      <h2>
+        <ShinyText color="#303133" :speed="6">工作台</ShinyText>
+      </h2>
+      <p>
+        <BlurText text="欢迎回来，快速查看你的学习与生活动态" :duration="0.5" :stagger="0.03" />
+      </p>
     </div>
 
     <!-- Error -->
@@ -14,49 +20,24 @@
     />
 
     <!-- Stat Cards -->
-    <div class="stat-row" ref="statRow">
-      <div class="stat-card" @click="$router.push('/scholarship')">
-        <div class="stat-icon sch">
-          <el-icon :size="24"><Trophy /></el-icon>
-        </div>
-        <div class="stat-body">
-          <span class="stat-num">{{ displayScholarship }}</span>
-          <span class="stat-lbl">我的奖学金</span>
-        </div>
-        <span class="stat-badge" v-if="pendingCount > 0">{{ pendingCount }} 待审</span>
+    <Reveal :delay="0.1">
+      <div class="stat-row" ref="statRow">
+        <TiltCard v-for="card in statCards" :key="card.key" :max-tilt="6" :scale="1.03" class="stat-card-wrap">
+          <div class="stat-card" @click="$router.push(card.path)">
+            <div class="stat-icon" :class="card.cls">
+              <el-icon :size="24"><component :is="card.icon" /></el-icon>
+            </div>
+            <div class="stat-body">
+              <span class="stat-num">
+                <CountUp :to="card.value" :duration="1.2" />
+              </span>
+              <span class="stat-lbl">{{ card.label }}</span>
+            </div>
+            <span class="stat-badge" v-if="card.badge">{{ card.badge }}</span>
+          </div>
+        </TiltCard>
       </div>
-
-      <div class="stat-card" @click="$router.push('/message/notice')">
-        <div class="stat-icon nt">
-          <el-icon :size="24"><Bell /></el-icon>
-        </div>
-        <div class="stat-body">
-          <span class="stat-num">{{ displayUnread }}</span>
-          <span class="stat-lbl">未读通知</span>
-        </div>
-        <span class="stat-badge unread" v-if="unreadCount > 0">{{ unreadCount }} 条</span>
-      </div>
-
-      <div class="stat-card" @click="$router.push('/scholarship')">
-        <div class="stat-icon pd">
-          <el-icon :size="24"><Clock /></el-icon>
-        </div>
-        <div class="stat-body">
-          <span class="stat-num">{{ displayPending }}</span>
-          <span class="stat-lbl">待审核申请</span>
-        </div>
-      </div>
-
-      <div class="stat-card" @click="$router.push('/message/events')">
-        <div class="stat-icon ev">
-          <el-icon :size="24"><Calendar /></el-icon>
-        </div>
-        <div class="stat-body">
-          <span class="stat-num">{{ displayEvent }}</span>
-          <span class="stat-lbl">近期活动</span>
-        </div>
-      </div>
-    </div>
+    </Reveal>
 
     <!-- Content Row -->
     <div class="content-row">
@@ -91,14 +72,16 @@
         </div>
       </div>
     </div>
+    </FadeContent>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { getAnnouncements, getEvents, getUnreadAnnounceCount } from '@/api/message'
 import { getScholarshipApplications } from '@/api/scholarship'
-import gsap from 'gsap'
+import { Trophy, Bell, Clock, Calendar } from '@element-plus/icons-vue'
+import { ParticlesBackground, ShinyText, BlurText, CountUp, Reveal, TiltCard } from '@/components/react-bits'
 
 const announcements = ref([])
 const events = ref([])
@@ -106,7 +89,13 @@ const loading = ref(true)
 const loadError = ref(false)
 
 const scholarshipCount = ref(0), unreadCount = ref(0), pendingCount = ref(0), eventCount = ref(0)
-const displayScholarship = ref(0), displayUnread = ref(0), displayPending = ref(0), displayEvent = ref(0)
+
+const statCards = computed(() => [
+  { key: 'scholarship', cls: 'sch', icon: Trophy, value: scholarshipCount.value, label: '我的奖学金', path: '/scholarship', badge: pendingCount.value > 0 ? `${pendingCount.value} 待审` : '' },
+  { key: 'notice', cls: 'nt', icon: Bell, value: unreadCount.value, label: '未读通知', path: '/message/notice', badge: unreadCount.value > 0 ? `${unreadCount.value} 条` : '' },
+  { key: 'pending', cls: 'pd', icon: Clock, value: pendingCount.value, label: '待审核申请', path: '/scholarship', badge: '' },
+  { key: 'event', cls: 'ev', icon: Calendar, value: eventCount.value, label: '近期活动', path: '/message/events', badge: '' },
+])
 const statRow = ref(null)
 const countRefs = ref([])
 
@@ -133,28 +122,6 @@ onMounted(async () => {
     eventCount.value = e?.total || events.value.length
   } catch { loadError.value = true }
   finally { loading.value = false }
-
-  nextTick(() => {
-    // Animate stat cards
-    const cards = statRow.value?.querySelectorAll('.stat-card')
-    if (cards) {
-      gsap.fromTo(cards, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' })
-    }
-    // Animate counters
-    const targets = [
-      { ref: displayScholarship, end: scholarshipCount.value },
-      { ref: displayUnread, end: unreadCount.value },
-      { ref: displayPending, end: pendingCount.value },
-      { ref: displayEvent, end: eventCount.value },
-    ]
-    targets.forEach((t, i) => {
-      gsap.to({ v: 0 }, { v: t.end, duration: 1, delay: 0.2 + i * 0.1, ease: 'power2.out',
-        onUpdate(p) { t.ref.value = Math.round(p.targets()[0].v) },
-      })
-    })
-    // List items
-    gsap.fromTo('.list-item', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, stagger: 0.06, delay: 0.6 })
-  })
 })
 </script>
 

@@ -149,6 +149,7 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import gsap from 'gsap'
+import { FadeContent, GradientText } from '@/components/react-bits'
 
 const pageRef = ref(null)
 const activeTab = ref('lateReturn')

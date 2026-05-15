@@ -114,6 +114,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { createAppointment, getMyAppointments, cancelAppointment } from '@/api/career'
+import { FadeContent, GradientText } from '@/components/react-bits'
 
 const formRef = ref(null)
 const loading = ref(false)

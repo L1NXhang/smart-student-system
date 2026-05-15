@@ -117,6 +117,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { submitLeave, getLeaveRecords, cancelLeave } from '@/api/safety'
+import { FadeContent, GradientText } from '@/components/react-bits'
 
 const formRef = ref(null)
 const loading = ref(false)

@@ -1,5 +1,7 @@
 <template>
   <div class="admin-dashboard" ref="dashboardRef">
+    <FadeContent>
+    <GridMotionBackground color="rgba(64, 158, 255, 0.06)" :grid-size="60" :speed="0.2" />
     <!-- Stat Cards -->
     <el-row :gutter="20" class="stat-row">
       <el-col :xs="24" :sm="12" :md="6" v-for="(card, idx) in statCards" :key="idx">
@@ -67,6 +69,7 @@
         </el-card>
       </el-col>
     </el-row>
+    </FadeContent>
   </div>
 </template>
 
@@ -75,6 +78,7 @@ import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { getDashboardStats } from '@/api/admin'
 import gsap from 'gsap'
+import { GridMotionBackground } from '@/components/react-bits'
 
 const router = useRouter()
 const dashboardRef = ref(null)

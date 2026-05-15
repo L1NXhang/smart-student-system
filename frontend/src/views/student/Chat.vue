@@ -332,6 +332,7 @@ onUnmounted(() => {
 
 <template>
   <div class="chat-page">
+    <FadeContent>
     <!-- ══════════════════ Left: Contact List ══════════════════ -->
     <aside class="chat-sidebar">
       <div class="sidebar-header">
@@ -510,6 +511,7 @@ onUnmounted(() => {
         />
       </div>
     </main>
+    </FadeContent>
   </div>
 </template>
 

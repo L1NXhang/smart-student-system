@@ -1,9 +1,7 @@
 <template>
   <div class="auth-container">
-    <!-- 背景浮动粒子 -->
-    <div class="bg-particles" ref="particlesRef">
-      <span v-for="i in 12" :key="i" class="particle" :style="particleStyle(i)" />
-    </div>
+    <!-- Aurora 极光背景 -->
+    <AuroraBackground :speed="0.4" color1="#67a0f4" color2="#90c7a0" color3="#c4a0d8" />
 
     <div class="auth-card" ref="cardRef">
       <!-- 左侧品牌区 -->
@@ -18,7 +16,9 @@
           <div class="logo-icon">
             <img src="@/assets/logo.png" alt="校徽" class="school-logo" />
           </div>
-          <h1 class="system-name">智慧学工系统</h1>
+          <h1 class="system-name">
+            <ShinyText color="#ffffff" :speed="5">智慧学工系统</ShinyText>
+          </h1>
           <p class="system-subtitle">Smart Student Affairs System</p>
         </div>
 
@@ -36,13 +36,17 @@
           </svg>
         </div>
 
-        <p class="auth-slogan" ref="sloganRef">以学生为本，用智慧服务成长</p>
+        <p class="auth-slogan" ref="sloganRef">
+          <BlurText text="以学生为本，用智慧服务成长" :duration="0.8" :stagger="0.06" />
+        </p>
       </div>
 
       <!-- 右侧表单 -->
       <div class="auth-right">
         <div class="auth-form-wrapper" ref="formWrapperRef">
-          <h2 class="form-title">欢迎登录</h2>
+          <h2 class="form-title">
+            <GradientText from="#3b82f6" to="#8b5cf6">欢迎登录</GradientText>
+          </h2>
           <p class="form-desc">请输入您的账号信息</p>
 
           <el-form ref="formRef" :model="form" :rules="rules" class="auth-form" @keyup.enter="handleLogin">
@@ -118,12 +122,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { gsap } from 'gsap'
+import gsap from 'gsap'
 import { ElMessage } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'
+import { AuroraBackground, ShinyText, GradientText, BlurText } from '@/components/react-bits'
 
 const router = useRouter()
 const store = useUserStore()
@@ -132,7 +137,6 @@ const cardRef = ref(null)
 const loginBtnRef = ref(null)
 const formRef = ref(null)
 const formWrapperRef = ref(null)
-const particlesRef = ref(null)
 const logoRef = ref(null)
 const illusRef = ref(null)
 const sloganRef = ref(null)
@@ -162,21 +166,6 @@ const rules = {
     { required: true, message: '请输入密码', trigger: 'blur' },
     { min: 6, message: '密码长度不能少于6位', trigger: 'blur' },
   ],
-}
-
-function particleStyle(i) {
-  const size = 4 + (i % 4) * 3
-  const x = (i * 37 + 13) % 100
-  const duration = 8 + (i % 5) * 3
-  const delay = (i * 0.7) % 6
-  return {
-    width: size + 'px',
-    height: size + 'px',
-    left: x + '%',
-    animationDuration: duration + 's',
-    animationDelay: delay + 's',
-    opacity: 0.15 + (i % 3) * 0.1,
-  }
 }
 
 // Slider captcha
@@ -290,7 +279,7 @@ onMounted(() => {
   }
 })
 
-onBeforeUnmount(() => {
+onUnmounted(() => {
   window.removeEventListener('mousemove', onDragging)
   window.removeEventListener('mouseup', onDragEnd)
   window.removeEventListener('touchmove', onDragging)
@@ -309,27 +298,6 @@ onBeforeUnmount(() => {
   padding: 20px;
   position: relative;
   overflow: hidden;
-}
-
-/* 浮动粒子 */
-.bg-particles {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-}
-.particle {
-  position: absolute;
-  bottom: -20px;
-  border-radius: 50%;
-  background: #93c5fd;
-  animation: float-up linear infinite;
-}
-@keyframes float-up {
-  0% { transform: translateY(0) scale(1); opacity: 0; }
-  10% { opacity: 0.6; }
-  90% { opacity: 0.1; }
-  100% { transform: translateY(-100vh) scale(0.5); opacity: 0; }
 }
 
 /* ===== Card ===== */

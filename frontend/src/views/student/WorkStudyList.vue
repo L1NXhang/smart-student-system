@@ -82,6 +82,7 @@ import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { getWorkStudyPositions, getWorkStudyPosition, applyWorkStudy } from '@/api/scholarship'
 import gsap from 'gsap'
+import { FadeContent, GradientText } from '@/components/react-bits'
 
 const keyword = ref('')
 const loading = ref(false)

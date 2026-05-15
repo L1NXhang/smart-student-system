@@ -1,5 +1,6 @@
 <template>
   <div class="auth-container">
+    <ParticlesBackground :count="40" color="rgba(139, 92, 246, 0.1)" />
     <div class="auth-card" ref="cardRef">
       <!-- Left: Illustration / Branding -->
       <div class="auth-left">
@@ -7,7 +8,9 @@
           <div class="logo-icon">
             <img src="@/assets/logo.png" alt="校徽" class="school-logo" />
           </div>
-          <h1 class="system-name">智慧学工系统</h1>
+          <h1 class="system-name">
+            <ShinyText color="#ffffff" :speed="6">智慧学工系统</ShinyText>
+          </h1>
           <p class="system-subtitle">Smart Student Affairs System</p>
         </div>
         <div class="auth-illustration">
@@ -21,13 +24,17 @@
             <circle cx="165" cy="107" r="10" fill="currentColor" fill-opacity="0.08"/>
           </svg>
         </div>
-        <p class="auth-slogan">以学生为本，用智慧服务成长</p>
+        <p class="auth-slogan">
+          <BlurText text="以学生为本，用智慧服务成长" :duration="0.6" :stagger="0.04" />
+        </p>
       </div>
 
       <!-- Right: Register Form -->
       <div class="auth-right">
         <div class="auth-form-wrapper">
-          <h2 class="form-title">创建账号</h2>
+          <h2 class="form-title">
+            <GradientText from="#8b5cf6" to="#ec4899">创建账号</GradientText>
+          </h2>
           <p class="form-desc">填写以下信息完成注册</p>
 
           <el-form
@@ -106,6 +113,7 @@
 import { ref, reactive, onMounted, computed, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { gsap } from 'gsap'
+import { ParticlesBackground, ShinyText, GradientText, BlurText } from '@/components/react-bits'
 import { ElMessage } from 'element-plus'
 import { User, Lock, Phone } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'

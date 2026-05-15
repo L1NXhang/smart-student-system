@@ -1,5 +1,6 @@
 <template>
   <div class="auth-container">
+    <ParticlesBackground :count="30" color="rgba(245, 158, 11, 0.1)" />
     <div class="auth-card" ref="cardRef">
       <!-- Left: Illustration / Branding -->
       <div class="auth-left">
@@ -12,7 +13,9 @@
               <circle cx="32" cy="20" r="3" fill="currentColor"/>
             </svg>
           </div>
-          <h1 class="system-name">智慧学工系统</h1>
+          <h1 class="system-name">
+            <ShinyText color="#ffffff" :speed="5">智慧学工系统</ShinyText>
+          </h1>
           <p class="system-subtitle">Smart Student Affairs System</p>
         </div>
         <div class="auth-illustration">
@@ -25,13 +28,17 @@
             <circle cx="165" cy="107" r="10" fill="currentColor" fill-opacity="0.08"/>
           </svg>
         </div>
-        <p class="auth-slogan">首次登录，请修改密码</p>
+        <p class="auth-slogan">
+          <DecryptedText text="首次登录，请修改密码" :speed="50" />
+        </p>
       </div>
 
       <!-- Right: Change Password Form -->
       <div class="auth-right">
         <div class="auth-form-wrapper">
-          <h2 class="form-title">修改密码</h2>
+          <h2 class="form-title">
+            <GradientText from="#f59e0b" to="#ef4444">修改密码</GradientText>
+          </h2>
           <p class="form-desc">为保障账户安全，首次登录请设置新密码</p>
 
           <el-form
@@ -96,6 +103,7 @@
 import { ref, reactive, onMounted, computed, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { gsap } from 'gsap'
+import { ParticlesBackground, ShinyText, GradientText, DecryptedText } from '@/components/react-bits'
 import { ElMessage } from 'element-plus'
 import { Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'

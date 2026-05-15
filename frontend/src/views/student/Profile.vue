@@ -1,9 +1,13 @@
 <template>
   <div class="profile-page">
-    <div class="page-header">
-      <h2>个人信息</h2>
-      <p>查看和编辑您的个人档案，关键字段修改需管理员审核</p>
-    </div>
+    <Reveal>
+      <div class="page-header">
+        <h2>
+          <GradientText from="#409EFF" to="#67C23A">个人信息</GradientText>
+        </h2>
+        <p>查看和编辑您的个人档案，关键字段修改需管理员审核</p>
+      </div>
+    </Reveal>
 
     <div class="profile-body" v-loading="loading">
       <el-form
@@ -242,6 +246,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UserFilled } from '@element-plus/icons-vue'
+import { Reveal, GradientText, StarBorder } from '@/components/react-bits'
 import {
   getStudentInfo, uploadPhoto, batchSubmitInfoChange,
   updateStudentInfo, submitDifficultyApplication,

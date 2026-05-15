@@ -99,6 +99,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search, Star, StarFilled, View } from '@element-plus/icons-vue'
 import { getJobInfos, getJobInfo, favoriteJob } from '@/api/career'
+import { FadeContent, GradientText } from '@/components/react-bits'
 
 const list = ref([])
 const loading = ref(false)

@@ -162,6 +162,7 @@ import { ElMessage } from 'element-plus'
 import { ArrowLeft, Plus, Delete } from '@element-plus/icons-vue'
 import { applyScholarship } from '@/api/scholarship'
 import { getStudentInfo } from '@/api/student'
+import { FadeContent, GradientText } from '@/components/react-bits'
 
 const formRef = ref(null)
 const submitting = ref(false)

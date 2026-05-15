@@ -73,6 +73,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { getAnnouncements, getAnnouncement, markAnnouncementRead, getUnreadAnnounceCount } from '@/api/message'
+import { FadeContent, GradientText } from '@/components/react-bits'
 
 const tab = ref('all')
 const list = ref([])

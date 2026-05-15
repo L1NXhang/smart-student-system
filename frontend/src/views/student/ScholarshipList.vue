@@ -68,6 +68,7 @@ import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { getScholarshipApplications, exportScholarshipDocx } from '@/api/scholarship'
+import { FadeContent, GradientText } from '@/components/react-bits'
 
 const list = ref([])
 const loading = ref(false)

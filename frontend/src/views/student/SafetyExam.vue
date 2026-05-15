@@ -120,6 +120,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getExams, getExamQuestions, submitExam as submitExamApi, getExamRecord } from '@/api/safety'
+import { FadeContent, GradientText } from '@/components/react-bits'
 
 const exams = ref([])
 const loadingExams = ref(false)

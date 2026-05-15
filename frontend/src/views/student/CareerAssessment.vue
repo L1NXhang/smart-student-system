@@ -142,6 +142,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getAssessmentQuestions, submitAssessment, getAssessmentHistory } from '@/api/career'
+import { FadeContent, GradientText } from '@/components/react-bits'
 
 const assessmentType = ref('interest')
 const questions = ref([])

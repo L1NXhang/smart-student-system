@@ -91,6 +91,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { getGrades } from '@/api/academic'
 import gsap from 'gsap'
+import { FadeContent, GradientText } from '@/components/react-bits'
 
 const loading = ref(false)
 const grades = ref([])

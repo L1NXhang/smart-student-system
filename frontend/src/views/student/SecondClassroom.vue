@@ -99,6 +99,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { getSecondClassroom } from '@/api/academic'
 import gsap from 'gsap'
+import { FadeContent, GradientText } from '@/components/react-bits'
 
 const loading = ref(false)
 const activities = ref([])
