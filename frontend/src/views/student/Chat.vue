@@ -80,8 +80,9 @@ function scrollToBottom() {
 async function loadContacts() {
   try {
     const res = await getContacts()
-    contacts.value = res.data?.rows || res.data || []
+    contacts.value = res.data?.contacts || res.contacts || []
   } catch {
+    contacts.value = []
     ElMessage.error('加载联系人失败')
   }
 }

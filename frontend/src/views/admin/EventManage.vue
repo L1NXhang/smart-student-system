@@ -167,7 +167,7 @@ async function fetchEvents() {
   loading.value = true
   try {
     const res = await getEvents({ page: 1, pageSize: 50 })
-    eventList.value = (res.list || []).map(e => ({
+    eventList.value = (res.data?.list || res.list || []).map(e => ({
       id: e.id,
       title: e.title,
       type: e.event_type === 'academic' ? '学术讲座' : e.event_type === 'sports' ? '文体活动' : e.event_type === 'volunteer' ? '志愿服务' : e.event_type === 'culture' ? '社团活动' : '其他',
