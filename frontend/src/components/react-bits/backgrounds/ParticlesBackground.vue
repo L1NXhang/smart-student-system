@@ -4,7 +4,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import gsap from 'gsap'
+import { useMobile } from '@/composables/useMobile'
 
 const props = defineProps({
   count: { type: Number, default: 60 },
@@ -13,6 +13,9 @@ const props = defineProps({
   speed: { type: Number, default: 0.3 },
   connectDistance: { type: Number, default: 130 },
 })
+
+const { isMobile, isReducedMotion } = useMobile()
+const effectiveCount = computed(() => isMobile.value ? Math.floor(props.count / 3) : props.count)
 
 const canvasRef = ref(null)
 let ctx = null
@@ -79,12 +82,13 @@ function loop() {
 }
 
 onMounted(() => {
+  if (isReducedMotion.value) return
   canvas = canvasRef.value
   if (!canvas) return
   ctx = canvas.getContext('2d')
   resize()
   const dpr = window.devicePixelRatio || 1
-  particles = Array.from({ length: props.count }, () => create(canvas.width / dpr, canvas.height / dpr))
+  particles = Array.from({ length: effectiveCount.value }, () => create(canvas.width / dpr, canvas.height / dpr))
   loop()
   window.addEventListener('resize', resize)
 })
