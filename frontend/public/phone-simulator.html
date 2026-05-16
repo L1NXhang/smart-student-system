@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📱 手机模拟器 — 智慧学工系统</title>
+<style>
+  :root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --text: #e0e0e0;
+    --accent: #4fc3f7;
+    --accent2: #66bb6a;
+    --border: #2a2a4a;
+    --danger: #ef5350;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'PingFang SC', 'Microsoft YaHei', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ─── Toolbar ─── */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    z-index: 10;
+  }
+  .toolbar .brand {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-right: 12px;
+    white-space: nowrap;
+  }
+  .toolbar .brand .dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    background: var(--accent2);
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .tool-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    border-right: 1px solid var(--border);
+  }
+  .tool-group:last-child { border-right: none; }
+  .tool-label {
+    font-size: 11px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  .btn {
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+    white-space: nowrap;
+    font-family: inherit;
+  }
+  .btn:hover { background: rgba(255,255,255,0.05); border-color: #555; }
+  .btn.active {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+  .btn.rotate-btn {
+    font-size: 18px;
+    padding: 6px 10px;
+    line-height: 1;
+  }
+  .btn.url-btn {
+    font-size: 12px;
+    padding: 6px 12px;
+    background: rgba(79,195,247,0.1);
+    border-color: rgba(79,195,247,0.3);
+  }
+
+  .divider { width: 1px; height: 24px; background: var(--border); }
+
+  /* ─── Main area ─── */
+  .main-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+    padding: 20px;
+    background:
+      radial-gradient(circle at 20% 50%, rgba(79,195,247,0.03) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(102,187,106,0.03) 0%, transparent 50%),
+      var(--bg);
+  }
+
+  /* ─── Phone frame ─── */
+  .phone-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .phone-frame {
+    position: relative;
+    background: #1c1c1e;
+    border-radius: 36px;
+    padding: 12px;
+    box-shadow:
+      0 0 0 2px #333,
+      0 0 0 4px #1c1c1e,
+      0 0 0 6px #444,
+      0 20px 60px rgba(0,0,0,0.5),
+      inset 0 0 20px rgba(255,255,255,0.02);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Notch */
+  .phone-notch {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 28px;
+    background: #1c1c1e;
+    border-radius: 0 0 18px 18px;
+    z-index: 5;
+    transition: all 0.4s ease;
+  }
+  .phone-notch.landscape {
+    top: 50%;
+    left: 12px;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 80px;
+    border-radius: 0 18px 18px 0;
+  }
+
+  .phone-screen {
+    position: relative;
+    background: #fff;
+    border-radius: 24px;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .phone-screen iframe {
+    border: none;
+    width: 100%;
+    height: 100%;
+    display: block;
+    background: #f8fafc;
+  }
+
+  /* ─── Status bar overlay ─── */
+  .status-bar-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 32px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.05), transparent);
+    pointer-events: none;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 22px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #333;
+  }
+  .status-bar-overlay .time { font-size: 12px; }
+  .status-bar-overlay .icons { display: flex; gap: 4px; align-items: center; }
+  .status-bar-overlay .icons span { font-size: 10px; }
+
+  /* ─── Phone bottom bar ─── */
+  .phone-home-bar {
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 4px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  /* ─── Device label ─── */
+  .device-label {
+    font-size: 12px;
+    color: #666;
+    letter-spacing: 1px;
+    text-align: center;
+  }
+  .device-label strong { color: #999; }
+
+  /* ─── Info panel ─── */
+  .info-panel {
+    font-size: 11px;
+    color: #555;
+    text-align: center;
+    padding: 6px;
+    display: flex;
+    gap: 16px;
+  }
+  .info-panel span { white-space: nowrap; }
+
+  /* Responsive for the toolbar */
+  @media (max-width: 800px) {
+    .toolbar { gap: 8px; padding: 8px 12px; }
+    .tool-group { padding: 0 8px; }
+    .btn { padding: 5px 10px; font-size: 12px; }
+    .toolbar .brand { font-size: 15px; margin-right: 4px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <div class="brand"><span class="dot"></span>手机模拟器</div>
+
+  <div class="tool-group">
+    <span class="tool-label">设备</span>
+    <button class="btn active" data-device="iphone-se">iPhone SE</button>
+    <button class="btn" data-device="iphone-13">iPhone 13</button>
+    <button class="btn" data-device="iphone-14pm">iPhone 14PM</button>
+    <button class="btn" data-device="pixel-5">Pixel 5</button>
+    <button class="btn" data-device="ipad-mini">iPad Mini</button>
+  </div>
+
+  <div class="tool-group">
+    <button class="btn rotate-btn" id="rotateBtn" title="旋转屏幕">↻</button>
+  </div>
+
+  <div class="tool-group">
+    <span class="tool-label">缩放</span>
+    <button class="btn" data-scale="0.5">50%</button>
+    <button class="btn" data-scale="0.75">75%</button>
+    <button class="btn active" data-scale="1">100%</button>
+    <button class="btn" data-scale="fit">适应</button>
+  </div>
+
+  <div class="tool-group">
+    <button class="btn url-btn" id="reloadBtn" title="刷新">🔄 刷新</button>
+  </div>
+
+  <div class="tool-group">
+    <input
+      type="text"
+      id="urlInput"
+      value="http://localhost:5173/#/login"
+      style="width:220px; padding:6px 10px; border:1px solid var(--border); border-radius:6px; background:var(--bg); color:var(--text); font-size:12px; font-family:monospace;"
+      placeholder="输入URL"
+    />
+    <button class="btn" id="goBtn">GO</button>
+  </div>
+</div>
+
+<!-- Main display area -->
+<div class="main-area" id="mainArea">
+  <div class="phone-container">
+    <div class="phone-frame" id="phoneFrame">
+      <div class="phone-notch" id="phoneNotch"></div>
+      <div class="phone-screen" id="phoneScreen">
+        <div class="status-bar-overlay">
+          <span class="time">9:41</span>
+          <span class="icons">
+            <span>5G</span>
+            <span>▮▮▮▮</span>
+            <span>🔋</span>
+          </span>
+        </div>
+        <iframe id="previewFrame" src="about:blank"></iframe>
+      </div>
+      <div class="phone-home-bar"></div>
+    </div>
+    <div class="device-label" id="deviceLabel">iPhone SE · 375×667 · 1×</div>
+    <div class="info-panel">
+      <span id="viewportInfo">视口: 375×667</span>
+      <span id="scaleInfo">缩放: 100%</span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  // ─── Device presets (CSS pixels)
+  const devices = {
+    'iphone-se':    { name: 'iPhone SE',         w: 375, h: 667,  notch: false, radius: 24 },
+    'iphone-13':    { name: 'iPhone 13',          w: 390, h: 844,  notch: true,  radius: 28 },
+    'iphone-14pm':  { name: 'iPhone 14 Pro Max',  w: 430, h: 932,  notch: true,  radius: 32 },
+    'pixel-5':      { name: 'Pixel 5',            w: 412, h: 915,  notch: false, radius: 24 },
+    'ipad-mini':    { name: 'iPad Mini',          w: 744, h: 1133, notch: false, radius: 20 },
+  };
+
+  let currentDevice = 'iphone-se';
+  let isLandscape = false;
+  let currentScale = 1;
+  let fitMode = false;
+
+  const phoneFrame = document.getElementById('phoneFrame');
+  const phoneScreen = document.getElementById('phoneScreen');
+  const phoneNotch = document.getElementById('phoneNotch');
+  const previewFrame = document.getElementById('previewFrame');
+  const deviceLabel = document.getElementById('deviceLabel');
+  const viewportInfo = document.getElementById('viewportInfo');
+  const scaleInfo = document.getElementById('scaleInfo');
+  const urlInput = document.getElementById('urlInput');
+  const mainArea = document.getElementById('mainArea');
+
+  function getDevice() {
+    return devices[currentDevice];
+  }
+
+  function getViewport() {
+    const d = getDevice();
+    return isLandscape ? { w: d.h, h: d.w } : { w: d.w, h: d.h };
+  }
+
+  function updateFrame() {
+    const d = getDevice();
+    const vp = getViewport();
+    const scale = fitMode ? calculateFitScale(vp.w, vp.h) : currentScale;
+
+    // Screen size
+    phoneScreen.style.width  = vp.w + 'px';
+    phoneScreen.style.height = vp.h + 'px';
+
+    // Frame padding adjusts for notch
+    const pad = d.notch ? 16 : 12;
+    phoneFrame.style.padding = pad + 'px';
+    phoneFrame.style.borderRadius = (d.radius + pad) + 'px';
+
+    // Notch
+    if (d.notch) {
+      phoneNotch.style.display = 'block';
+      phoneNotch.className = 'phone-notch' + (isLandscape ? ' landscape' : '');
+    } else {
+      phoneNotch.style.display = 'none';
+    }
+
+    // Apply scale to frame
+    phoneFrame.style.transform = `scale(${scale})`;
+    phoneFrame.style.transformOrigin = 'center center';
+
+    // Labels
+    deviceLabel.innerHTML = `<strong>${d.name}</strong> · ${vp.w}×${vp.h} · ${Math.round(scale*100)}%`;
+    viewportInfo.textContent = `视口: ${vp.w}×${vp.h}`;
+    scaleInfo.textContent = `缩放: ${Math.round(scale*100)}%`;
+
+    // URL reflects current orientation viewport
+    updateIframe();
+  }
+
+  function calculateFitScale(vpW, vpH) {
+    const areaW = mainArea.clientWidth - 80;
+    const areaH = mainArea.clientHeight - 80;
+    const scaleW = areaW / (vpW + 40);
+    const scaleH = areaH / (vpH + 80);
+    return Math.min(scaleW, scaleH, 1.5);
+  }
+
+  function updateIframe() {
+    const d = getDevice();
+    const vp = getViewport();
+    const currentUrl = previewFrame.src || urlInput.value || 'http://localhost:5173/#/login';
+
+    // Re-set iframe src to trigger reload with correct viewport
+    const url = new URL(currentUrl);
+    // Don't add params to hash routes
+    previewFrame.style.width = vp.w + 'px';
+    previewFrame.style.height = vp.h + 'px';
+  }
+
+  function loadUrl(url) {
+    if (!url) url = urlInput.value;
+    if (!url) return;
+    // Auto-prepend localhost if just hash
+    if (url.startsWith('#') || url.startsWith('/#')) {
+      url = 'http://localhost:5173' + (url.startsWith('/') ? url : '/' + url);
+    }
+    if (!url.startsWith('http')) {
+      url = 'http://' + url;
+    }
+    urlInput.value = url;
+    previewFrame.src = url;
+  }
+
+  // ─── Event Listeners ───
+
+  // Device buttons
+  document.querySelectorAll('[data-device]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-device]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentDevice = btn.dataset.device;
+      fitMode = false;
+      document.querySelector('[data-scale="fit"]').classList.remove('active');
+      document.querySelector('[data-scale="1"]').classList.add('active');
+      currentScale = 1;
+      updateFrame();
+    });
+  });
+
+  // Scale buttons
+  document.querySelectorAll('[data-scale]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-scale]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      fitMode = btn.dataset.scale === 'fit';
+      if (!fitMode) currentScale = parseFloat(btn.dataset.scale);
+      updateFrame();
+    });
+  });
+
+  // Rotate button
+  document.getElementById('rotateBtn').addEventListener('click', () => {
+    isLandscape = !isLandscape;
+    updateFrame();
+  });
+
+  // Reload
+  document.getElementById('reloadBtn').addEventListener('click', () => {
+    previewFrame.src = previewFrame.src;
+  });
+
+  // URL Go
+  document.getElementById('goBtn').addEventListener('click', () => {
+    loadUrl(urlInput.value);
+  });
+
+  urlInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') loadUrl(urlInput.value);
+  });
+
+  // Resize observer for fit mode
+  window.addEventListener('resize', () => {
+    if (fitMode) updateFrame();
+  });
+
+  // Keyboard shortcuts
+  window.addEventListener('keydown', (e) => {
+    switch(e.key.toLowerCase()) {
+      case 'r':
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          previewFrame.src = previewFrame.src;
+        }
+        break;
+      case 'f5':
+        previewFrame.src = previewFrame.src;
+        break;
+      case 'arrowleft':
+        if (e.ctrlKey) {
+          e.preventDefault();
+          // Switch to previous device
+          const keys = Object.keys(devices);
+          const idx = keys.indexOf(currentDevice);
+          if (idx > 0) {
+            currentDevice = keys[idx - 1];
+            document.querySelectorAll('[data-device]').forEach(b => {
+              b.classList.toggle('active', b.dataset.device === currentDevice);
+            });
+            updateFrame();
+          }
+        }
+        break;
+      case 'arrowright':
+        if (e.ctrlKey) {
+          e.preventDefault();
+          const keys = Object.keys(devices);
+          const idx = keys.indexOf(currentDevice);
+          if (idx < keys.length - 1) {
+            currentDevice = keys[idx + 1];
+            document.querySelectorAll('[data-device]').forEach(b => {
+              b.classList.toggle('active', b.dataset.device === currentDevice);
+            });
+            updateFrame();
+          }
+        }
+        break;
+    }
+  });
+
+  // Initial load
+  updateFrame();
+  loadUrl('http://localhost:5173/#/login');
+
+  console.log('📱 手机模拟器已就绪');
+  console.log('  - 切换设备: 点击设备按钮');
+  console.log('  - 旋转屏幕: 点击 ↻ 或按 R');
+  console.log('  - 缩放: 点击缩放按钮');
+  console.log('  - 刷新: Ctrl+R 或点击刷新按钮');
+  console.log('  - 切换设备: Ctrl+← →');
+})();
+</script>
+</body>
+</html>

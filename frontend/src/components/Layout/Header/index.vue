@@ -1,5 +1,5 @@
 <template>
-  <header class="header">
+  <header class="header" :class="{ 'is-mobile': isMobile }">
     <div class="header-left">
       <span class="hamburger" @click="emit('toggle')">
         <el-icon :size="20">
@@ -8,7 +8,7 @@
         </el-icon>
       </span>
 
-      <el-breadcrumb separator="/">
+      <el-breadcrumb v-if="!isMobile" separator="/">
         <el-breadcrumb-item
           v-for="item in breadcrumbs"
           :key="item.path"
@@ -17,6 +17,7 @@
           {{ item.title }}
         </el-breadcrumb-item>
       </el-breadcrumb>
+      <span v-else class="mobile-title">{{ pageTitle }}</span>
     </div>
 
     <div class="header-right">
@@ -58,10 +59,8 @@ import { useUserStore } from '@/store/user'
 import { changePassword as changePasswordApi } from '@/api/auth'
 
 defineProps({
-  collapsed: {
-    type: Boolean,
-    default: false,
-  },
+  collapsed: { type: Boolean, default: false },
+  isMobile: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['toggle'])
@@ -73,10 +72,12 @@ const userStore = useUserStore()
 const breadcrumbs = computed(() => {
   return route.matched
     .filter((r) => r.meta?.title)
-    .map((r) => ({
-      path: r.path,
-      title: r.meta.title,
-    }))
+    .map((r) => ({ path: r.path, title: r.meta.title }))
+})
+
+const pageTitle = computed(() => {
+  const last = breadcrumbs.value[breadcrumbs.value.length - 1]
+  return last?.title || '智慧学工'
 })
 
 const profilePath = computed(() => {
@@ -199,5 +200,23 @@ async function handleLogout() {
   font-size: 12px;
   color: #909399;
   transition: transform 0.2s;
+}
+
+.mobile-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+@media (max-width: 767px) {
+  .header {
+    padding: 0 12px;
+    position: sticky;
+    top: 0;
+    z-index: 800;
+  }
+  .user-name {
+    display: none;
+  }
 }
 </style>

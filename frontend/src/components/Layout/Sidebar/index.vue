@@ -1,21 +1,27 @@
 <template>
-  <aside class="sidebar" :class="{ collapsed }" ref="sidebarRef">
-    <div class="sidebar-logo" @click="emit('toggle')">
+  <aside class="sidebar" :class="{ collapsed, 'is-mobile': isMobile }" ref="sidebarRef">
+    <div class="sidebar-logo" @click="isMobile ? emit('close') : emit('toggle')">
       <span class="logo-icon">&#x1F393;</span>
       <Transition name="fade">
-        <span v-show="!collapsed" class="logo-text">智慧学工</span>
+        <span v-show="!collapsed || isMobile" class="logo-text">智慧学工</span>
       </Transition>
     </div>
+
+    <!-- 移动端关闭按钮 -->
+    <button v-if="isMobile && !collapsed" class="mobile-close-btn" @click="emit('close')">
+      <el-icon :size="18"><Close /></el-icon>
+    </button>
 
     <el-menu
       :default-active="activeMenu"
       :default-openeds="defaultOpeneds"
-      :collapse="collapsed"
+      :collapse="!isMobile && collapsed"
       :router="true"
       class="sidebar-menu"
       background-color="#304156"
       text-color="#bfcbd9"
       active-text-color="#409EFF"
+      @select="onMenuSelect"
     >
       <!-- ========== Student Menus ========== -->
       <template v-if="!isAdmin">
@@ -145,18 +151,16 @@ import { useRoute } from 'vue-router'
 import gsap from 'gsap'
 import {
   Odometer, User, Money, Reading, Aim, Lock, ChatDotRound,
-  UserFilled, DocumentChecked, Briefcase, DataAnalysis, Bell, Calendar,
+  UserFilled, DocumentChecked, Briefcase, DataAnalysis, Bell, Calendar, Close,
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'
 
-defineProps({
-  collapsed: {
-    type: Boolean,
-    default: false,
-  },
+const props = defineProps({
+  collapsed: { type: Boolean, default: false },
+  isMobile: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['toggle'])
+const emit = defineEmits(['toggle', 'close'])
 
 const route = useRoute()
 const userStore = useUserStore()
@@ -184,6 +188,10 @@ const defaultOpeneds = computed(() => {
 })
 
 let menuTween
+
+function onMenuSelect() {
+  if (props.isMobile) emit('close')
+}
 
 onMounted(async () => {
   await nextTick()
@@ -257,15 +265,40 @@ onBeforeUnmount(() => {
   width: var(--sidebar-width, 220px);
 }
 
-@media (max-width: 768px) {
+.mobile-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: rgba(255,255,255,0.1);
+  color: #bfcbd9;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+}
+.mobile-close-btn:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+@media (max-width: 767px) {
   .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 240px !important;
     transform: translateX(-100%);
-    width: 220px !important;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1100;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.3);
   }
   .sidebar:not(.collapsed) {
     transform: translateX(0);
-    box-shadow: 4px 0 20px rgba(0,0,0,0.3);
   }
 }
 </style>
