@@ -40,7 +40,9 @@
       <el-table-column prop="review_comment" label="审核意见" min-width="150" show-overflow-tooltip>
         <template #default="{ row }">{{ row.review_comment || '-' }}</template>
       </el-table-column>
-      <el-table-column prop="created_at" label="申请时间" width="160" />
+      <el-table-column label="申请时间" width="160">
+        <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
+      </el-table-column>
       <el-table-column label="操作" width="100" fixed="right">
         <template #default="{ row }">
           <el-button
@@ -79,12 +81,18 @@ function statusTag(s) {
 function statusText(s) {
   return { pending: '待审核', approved: '已通过', rejected: '已拒绝' }[s] || s
 }
+function formatTime(d) {
+  if (!d) return ''
+  const t = new Date(d)
+  const pad = n => String(n).padStart(2, '0')
+  return t.getFullYear() + '-' + pad(t.getMonth() + 1) + '-' + pad(t.getDate()) + ' ' + pad(t.getHours()) + ':' + pad(t.getMinutes())
+}
 
 onMounted(async () => {
   loading.value = true
   try {
     const res = await getScholarshipApplications()
-    list.value = res.list || res.data || []
+    list.value = res.data?.list || res.list || []
   } catch { /* handled */ }
   finally { loading.value = false }
 })

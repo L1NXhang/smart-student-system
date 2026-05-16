@@ -49,6 +49,12 @@ const routes = [
         meta: { title: '奖学金申请' },
       },
       {
+        path: 'scholarship/grant',
+        name: 'GrantApply',
+        component: () => import('../views/student/GrantApply.vue'),
+        meta: { title: '助学金申请' },
+      },
+      {
         path: 'work-study',
         name: 'WorkStudyList',
         component: () => import('../views/student/WorkStudyList.vue'),
@@ -71,6 +77,18 @@ const routes = [
         name: 'SecondClassroom',
         component: () => import('../views/student/SecondClassroom.vue'),
         meta: { title: '第二课堂' },
+      },
+      {
+        path: 'academic/awards',
+        name: 'Awards',
+        component: () => import('../views/student/Awards.vue'),
+        meta: { title: '获奖记录' },
+      },
+      {
+        path: 'academic/disciplinary',
+        name: 'Disciplinary',
+        component: () => import('../views/student/Disciplinary.vue'),
+        meta: { title: '违纪查询' },
       },
       {
         path: 'career/assessment',
@@ -107,6 +125,12 @@ const routes = [
         name: 'SafetyExam',
         component: () => import('../views/student/SafetyExam.vue'),
         meta: { title: '安全考试' },
+      },
+      {
+        path: 'safety/incident',
+        name: 'IncidentReport',
+        component: () => import('../views/student/IncidentReport.vue'),
+        meta: { title: '异常上报' },
       },
       {
         path: 'message/chat',

@@ -7,6 +7,8 @@ const SafetyExam = require('./SafetyExam')
 const SafetyQuestion = require('./SafetyQuestion')
 const SafetyExamRecord = require('./SafetyExamRecord')
 const IncidentReport = require('./IncidentReport')
+const FamilyInfo = require('./FamilyInfo')
+const EmergencyContact = require('./EmergencyContact')
 const ChatMessage = require('./ChatMessage')
 const Announcement = require('./Announcement')
 const AnnouncementRead = require('./AnnouncementRead')
@@ -32,6 +34,12 @@ SafetyExam.hasMany(SafetyExamRecord, { foreignKey: 'exam_id', as: 'records' })
 SafetyExamRecord.belongsTo(SafetyExam, { foreignKey: 'exam_id', as: 'exam' })
 SafetyExamRecord.belongsTo(StudentInfo, { foreignKey: 'student_id', as: 'student' })
 
+StudentInfo.hasMany(FamilyInfo, { foreignKey: 'student_id', as: 'familyMembers' })
+FamilyInfo.belongsTo(StudentInfo, { foreignKey: 'student_id', as: 'student' })
+
+StudentInfo.hasMany(EmergencyContact, { foreignKey: 'student_id', as: 'emergencyContacts' })
+EmergencyContact.belongsTo(StudentInfo, { foreignKey: 'student_id', as: 'student' })
+
 StudentInfo.hasMany(IncidentReport, { foreignKey: 'student_id', as: 'incidentReports' })
 IncidentReport.belongsTo(StudentInfo, { foreignKey: 'student_id', as: 'student' })
 IncidentReport.belongsTo(User, { foreignKey: 'handler_id', as: 'handler' })
@@ -55,5 +63,5 @@ EventRegistration.belongsTo(StudentInfo, { foreignKey: 'student_id', as: 'studen
 module.exports = {
   sequelize, User, StudentInfo,
   LateReturnRecord, LeaveRecord, SafetyExam, SafetyQuestion, SafetyExamRecord,
-  IncidentReport, ChatMessage, Announcement, AnnouncementRead, Feedback, Event, EventRegistration,
+  IncidentReport, FamilyInfo, EmergencyContact, ChatMessage, Announcement, AnnouncementRead, Feedback, Event, EventRegistration,
 }

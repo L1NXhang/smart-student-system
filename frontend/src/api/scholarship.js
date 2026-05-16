@@ -27,3 +27,11 @@ export function applyWorkStudy(data) {
 export function getMyWorkStudyApplications() {
   return api.get('/scholarship/work-study/applications')
 }
+
+export function getScholarshipGrants() {
+  return api.get('/scholarship/grants')
+}
+
+export function applyScholarshipGrant(data) {
+  return api.post('/scholarship/grants', data)
+}

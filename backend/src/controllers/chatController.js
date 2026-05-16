@@ -36,10 +36,10 @@ exports.getContacts = async (req, res) => {
       contacts = rows
     }
 
-    res.json({ contacts })
+    return success(res, { contacts })
   } catch (err) {
     console.error('getContacts error:', err)
-    res.status(500).json({ message: '获取联系人失败' })
+    return error(res, '获取联系人失败', 500)
   }
 }
 

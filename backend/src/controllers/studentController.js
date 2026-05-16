@@ -30,9 +30,19 @@ const getStudentInfo = async (req, res) => {
       }
     );
 
+    // 获取紧急联系人
+    const emergencyContacts = await sequelize.query(
+      'SELECT * FROM emergency_contacts WHERE student_id = ?',
+      {
+        replacements: [studentInfo.id],
+        type: sequelize.QueryTypes.SELECT
+      }
+    );
+
     return success(res, {
       ...studentInfo.toJSON(),
-      familyInfo
+      familyInfo,
+      emergencyContacts,
     });
   } catch (err) {
     console.error('获取学生信息错误:', err);
@@ -257,6 +267,66 @@ const batchSubmitInfoChange = async (req, res) => {
   }
 };
 
+// 保存家庭信息
+const saveFamilyInfo = async (req, res) => {
+  try {
+    const student = await getCachedStudentInfo(req);
+    if (!student) return error(res, '学生信息不存在', 404);
+
+    const { members } = req.body;
+    if (!members || !Array.isArray(members)) return error(res, '请提供家庭成员信息', 400);
+
+    // Delete existing and re-insert
+    await sequelize.query('DELETE FROM family_info WHERE student_id = ?', { replacements: [student.id] });
+    for (const m of members) {
+      if (!m.name || !m.phone) continue;
+      await sequelize.query(
+        'INSERT INTO family_info (student_id, member_type, name, phone, relation) VALUES (?, ?, ?, ?, ?)',
+        { replacements: [student.id, m.memberType || 'parent', m.name, m.phone, m.relation || ''] }
+      );
+    }
+    return success(res, null, '家庭信息保存成功');
+  } catch (e) { return error(res, e.message, 500); }
+};
+
+// 保存紧急联系人
+const saveEmergencyContacts = async (req, res) => {
+  try {
+    const student = await getCachedStudentInfo(req);
+    if (!student) return error(res, '学生信息不存在', 404);
+
+    const { contacts } = req.body;
+    if (!contacts || !Array.isArray(contacts)) return error(res, '请提供紧急联系人信息', 400);
+
+    await sequelize.query('DELETE FROM emergency_contacts WHERE student_id = ?', { replacements: [student.id] });
+    for (const c of contacts) {
+      if (!c.name || !c.phone) continue;
+      await sequelize.query(
+        'INSERT INTO emergency_contacts (student_id, name, phone, relation, is_primary) VALUES (?, ?, ?, ?, ?)',
+        { replacements: [student.id, c.name, c.phone, c.relation || '', c.isPrimary ? 1 : 0] }
+      );
+    }
+    return success(res, null, '紧急联系人保存成功');
+  } catch (e) { return error(res, e.message, 500); }
+};
+
+// 导出学生信息
+const exportStudentInfo = async (req, res) => {
+  try {
+    const student = await getCachedStudentInfo(req);
+    if (!student) return error(res, '学生信息不存在', 404);
+
+    const info = await StudentInfo.findOne({
+      where: { id: student.id },
+      include: [{ model: User, as: 'user', attributes: ['username', 'name', 'role'] }],
+    });
+    const [family] = await sequelize.query('SELECT * FROM family_info WHERE student_id = ?', { replacements: [student.id] });
+    const [contacts] = await sequelize.query('SELECT * FROM emergency_contacts WHERE student_id = ?', { replacements: [student.id] });
+
+    return success(res, { studentInfo: info, familyInfo: family, emergencyContacts: contacts });
+  } catch (e) { return error(res, e.message, 500); }
+};
+
 module.exports = {
   getStudentInfo,
   updateStudentInfo,
@@ -266,4 +336,7 @@ module.exports = {
   getDifficultyApplication,
   uploadPhoto,
   batchSubmitInfoChange,
+  saveFamilyInfo,
+  saveEmergencyContacts,
+  exportStudentInfo,
 };

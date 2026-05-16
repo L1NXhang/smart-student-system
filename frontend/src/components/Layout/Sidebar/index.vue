@@ -41,6 +41,7 @@
             <span>奖助服务</span>
           </template>
           <el-menu-item index="/scholarship">奖学金申请</el-menu-item>
+          <el-menu-item index="/scholarship/grant">助学金申请</el-menu-item>
           <el-menu-item index="/work-study">勤工助学</el-menu-item>
         </el-sub-menu>
 
@@ -52,6 +53,8 @@
           <el-menu-item index="/academic/grades">成绩查询</el-menu-item>
           <el-menu-item index="/academic/evaluation">中期鉴定</el-menu-item>
           <el-menu-item index="/academic/second-classroom">第二课堂</el-menu-item>
+          <el-menu-item index="/academic/awards">获奖记录</el-menu-item>
+          <el-menu-item index="/academic/disciplinary">违纪查询</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="career-group">
@@ -72,6 +75,7 @@
           <el-menu-item index="/safety/late-return">晚归登记</el-menu-item>
           <el-menu-item index="/safety/leave">外出报备</el-menu-item>
           <el-menu-item index="/safety/exam">安全考试</el-menu-item>
+          <el-menu-item index="/safety/incident">异常上报</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="message-group">

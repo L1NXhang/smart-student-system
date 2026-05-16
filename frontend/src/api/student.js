@@ -35,3 +35,15 @@ export function submitDifficultyApplication(formData) {
 export function getDifficultyStatus() {
   return api.get('/student/difficulty-application')
 }
+
+export function saveFamilyInfo(data) {
+  return api.put('/student/family-info', data)
+}
+
+export function saveEmergencyContacts(data) {
+  return api.put('/student/emergency-contacts', data)
+}
+
+export function exportStudentInfo() {
+  return api.get('/student/export')
+}
