@@ -37,21 +37,25 @@ import MobileNav from './MobileNav.vue'
 
 const router = useRouter()
 const route = useRoute()
-const sidebarCollapsed = ref(true)
+const isMobile = ref(window.innerWidth < 768)
+const sidebarCollapsed = ref(isMobile.value) // mobile starts hidden, desktop starts expanded
 const mainRef = ref(null)
-const isMobile = ref(false)
 
 // Mobile detection
 let mqMobile
 function checkMobile() {
-  isMobile.value = window.innerWidth < 768
+  const mobile = window.innerWidth < 768
+  if (isMobile.value !== mobile) {
+    isMobile.value = mobile
+    // When switching to mobile, hide sidebar; when switching to desktop, show it expanded
+    sidebarCollapsed.value = mobile ? true : false
+  }
 }
 onMounted(() => {
+  // Ensure correct initial state
   checkMobile()
   mqMobile = window.matchMedia('(max-width: 767px)')
   mqMobile.addEventListener('change', checkMobile)
-  // On mobile, sidebar starts hidden
-  if (isMobile.value) sidebarCollapsed.value = true
 })
 onUnmounted(() => {
   mqMobile?.removeEventListener('change', checkMobile)
