@@ -1,8 +1,92 @@
 <template>
-  <div class="auth-container">
+  <div class="auth-container" :class="{ 'is-mobile': isMobile }">
     <!-- Aurora 极光背景 -->
-    <AuroraBackground :speed="0.6" :intensity="2.0" color1="#4fc3f7" color2="#66bb6a" color3="#ab47bc" color4="#64ffda" />
+    <AuroraBackground
+      :speed="isMobile ? 0.8 : 0.6"
+      :intensity="isMobile ? 3.0 : 2.0"
+      color1="#4fc3f7" color2="#66bb6a" color3="#ab47bc" color4="#64ffda"
+    />
 
+    <!-- ═══════════ 移动端布局 ═══════════ -->
+    <template v-if="isMobile">
+      <div class="mobile-login" ref="cardRef">
+        <div class="mobile-logo-area" ref="logoRef">
+          <div class="mobile-logo-icon">
+            <img src="@/assets/logo.png" alt="校徽" class="school-logo" />
+          </div>
+          <h1 class="mobile-system-name">
+            <ShinyText color="#1f2937" :speed="5">智慧学工</ShinyText>
+          </h1>
+        </div>
+
+        <div class="mobile-form-area" ref="formWrapperRef">
+          <el-form ref="formRef" :model="form" :rules="rules" class="auth-form" @keyup.enter="handleLogin">
+            <el-form-item prop="username" class="form-item-fx" ref="userItemRef">
+              <el-input
+                v-model="form.username"
+                placeholder="学号/工号"
+                :prefix-icon="User"
+                size="large"
+              />
+            </el-form-item>
+
+            <el-form-item prop="password" class="form-item-fx" ref="passItemRef">
+              <el-input
+                v-model="form.password"
+                type="password"
+                placeholder="密码"
+                :prefix-icon="Lock"
+                show-password
+                size="large"
+              />
+            </el-form-item>
+
+            <el-form-item>
+              <el-button
+                ref="loginBtnRef"
+                type="primary"
+                size="large"
+                :loading="loading"
+                :disabled="loading || !captchaPassed"
+                class="login-btn"
+                @click="handleLogin"
+              >
+                <span v-if="loading">登录中...</span>
+                <span v-else>登 录</span>
+              </el-button>
+            </el-form-item>
+          </el-form>
+
+          <!-- 滑块验证 -->
+          <div class="captcha-section" ref="captchaRef">
+            <div class="captcha-track" ref="trackRef" @mousedown="onDragStart" @touchstart.prevent="onDragStart">
+              <div class="captcha-track-bg" :style="{ width: captchaProgress + '%' }" />
+              <div
+                class="captcha-slider"
+                ref="sliderRef"
+                :class="{ passed: captchaPassed }"
+                :style="{ left: sliderLeft + 'px' }"
+                @mousedown.stop="onDragStart"
+                @touchstart.stop.prevent="onDragStart"
+              >
+                <span v-if="captchaPassed">&#10003;</span>
+                <span v-else>&rarr;</span>
+              </div>
+              <span class="captcha-hint" :class="{ success: captchaPassed }">
+                {{ captchaPassed ? '✓ 验证通过' : '请按住滑块拖动到最右边' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="auth-link">
+            还没有账号？<router-link to="/register">立即注册</router-link>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- ═══════════ 桌面端布局 ═══════════ -->
+    <template v-else>
     <div class="auth-card" ref="cardRef">
       <!-- 左侧品牌区 -->
       <div class="auth-left">
@@ -104,6 +188,7 @@
         </div>
       </div>
     </div>
+    </template>
   </div>
 </template>
 
@@ -118,6 +203,13 @@ import { AuroraBackground, ShinyText, GradientText, BlurText } from '@/component
 
 const router = useRouter()
 const store = useUserStore()
+const isMobile = ref(window.innerWidth < 768)
+
+// Keep isMobile updated on resize
+function onResize() {
+  isMobile.value = window.innerWidth < 768
+}
+window.addEventListener('resize', onResize)
 
 const cardRef = ref(null)
 const loginBtnRef = ref(null)
@@ -220,6 +312,22 @@ async function handleLogin() {
 }
 
 onMounted(() => {
+  isMobile.value = window.innerWidth < 768
+
+  if (isMobile.value) {
+    // Mobile: simpler entrance animation
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
+    tl.fromTo(cardRef.value, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6 })
+    tl.fromTo(logoRef.value, { y: -16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'back.out(1.7)' }, '-=0.2')
+    tl.fromTo('.form-item-fx', { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, stagger: 0.1 }, '-=0.2')
+    if (captchaRef.value) {
+      tl.fromTo(captchaRef.value, { y: 8, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35 }, '-=0.05')
+    }
+    tl.fromTo('.auth-link', { opacity: 0 }, { opacity: 1, duration: 0.25 }, '-=0.05')
+    return
+  }
+
+  // Desktop animations
   const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
 
   // Card enter
@@ -265,6 +373,7 @@ onUnmounted(() => {
   window.removeEventListener('mouseup', onDragEnd)
   window.removeEventListener('touchmove', onDragging)
   window.removeEventListener('touchend', onDragEnd)
+  window.removeEventListener('resize', onResize)
 })
 </script>
 
@@ -281,7 +390,7 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-/* ===== Card ===== */
+/* ===== Card (Desktop) ===== */
 .auth-card {
   display: flex;
   width: 860px;
@@ -295,7 +404,7 @@ onUnmounted(() => {
   z-index: 1;
 }
 
-/* ===== Left Panel ===== */
+/* ===== Desktop: Left Panel ===== */
 .auth-left {
   flex: 0 0 400px;
   background: linear-gradient(160deg, #3b82f6 0%, #2563eb 40%, #1d4ed8 100%);
@@ -309,7 +418,6 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-/* Decorative rings */
 .auth-bg-rings {
   position: absolute;
   inset: 0;
@@ -331,7 +439,7 @@ onUnmounted(() => {
 .system-subtitle { font-size: 13px; opacity: 0.7; margin: 0; letter-spacing: 1px; font-weight: 300; }
 .auth-slogan { font-size: 13px; opacity: 0.65; margin: 0; position: relative; z-index: 1; flex: 0.382; display: flex; align-items: flex-end; padding-bottom: 24px; }
 
-/* ===== Right Panel ===== */
+/* ===== Desktop: Right Panel ===== */
 .auth-right {
   flex: 1;
   display: flex;
@@ -343,6 +451,7 @@ onUnmounted(() => {
 .form-title { font-size: 24px; font-weight: 700; color: #1f2937; margin: 0 0 4px; }
 .form-desc { font-size: 13px; color: #9ca3af; margin: 0 0 32px; }
 
+/* Shared form styles */
 .auth-form :deep(.el-form-item) { margin-bottom: 20px; }
 .auth-form :deep(.el-input__wrapper) {
   border-radius: 12px;
@@ -371,13 +480,11 @@ onUnmounted(() => {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(37,99,235,0.35);
 }
-.login-btn:not(:disabled):active {
-  transform: translateY(0);
-}
+.login-btn:not(:disabled):active { transform: translateY(0); }
 
 .btn-loading-text { letter-spacing: 2px; }
 
-/* ===== Captcha ===== */
+/* ===== Captcha (shared) ===== */
 .captcha-section { max-width: 320px; margin: 0 auto 12px; }
 .captcha-label { font-size: 12px; color: #9ca3af; margin: 0 0 6px; text-align: center; }
 .captcha-track {
@@ -410,47 +517,62 @@ onUnmounted(() => {
 .auth-link a { color: #3b82f6; text-decoration: none; font-weight: 500; }
 .auth-link a:hover { text-decoration: underline; }
 
-/* ===== Responsive ===== */
-@media (max-width: 767px) {
-  .auth-container {
-    padding: 0;
-    align-items: flex-start;
-  }
-  .auth-card {
-    flex-direction: column;
-    width: 100%;
-    max-width: 100%;
-    min-height: 100vh;
-    border-radius: 0;
-  }
-  .auth-left {
-    flex: none;
-    padding: 36px 24px 28px;
-    min-height: auto;
-  }
-  .auth-bg-rings { display: none; }
-  .logo-icon { width: 72px; height: 72px; margin-bottom: 12px; }
-  .system-name { font-size: 22px; letter-spacing: 2px; }
-  .system-subtitle { font-size: 12px; }
-  .auth-slogan {
-    flex: none;
-    padding-bottom: 0;
-    margin-top: 12px;
-    font-size: 12px;
-    text-align: center;
-  }
-  .auth-right {
-    padding: 24px 24px 40px;
-  }
-  .auth-form-wrapper {
-    max-width: 100%;
-  }
-  .form-title { font-size: 20px; }
-  .form-desc { margin-bottom: 24px; }
-  .login-btn { height: 48px; font-size: 16px; }
-  .captcha-section { max-width: 100%; }
+/* ═══════════════ Mobile Layout ═══════════════ */
+.auth-container.is-mobile {
+  background: #fff;
+  padding: 0;
+  align-items: flex-start;
 }
 
+.mobile-login {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 28px 40px;
+}
+
+.mobile-logo-area {
+  text-align: center;
+  margin-bottom: 36px;
+}
+.mobile-logo-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 16px;
+}
+.mobile-logo-icon .school-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 16px;
+}
+.mobile-system-name {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1f2937;
+  letter-spacing: 3px;
+}
+
+.mobile-form-area {
+  width: 100%;
+  max-width: 360px;
+}
+
+.mobile-form-area .captcha-section {
+  max-width: 100%;
+}
+
+.mobile-form-area .login-btn {
+  height: 48px;
+  font-size: 17px;
+  border-radius: 14px;
+}
+
+/* ===== Desktop Tablet ===== */
 @media (min-width: 768px) and (max-width: 900px) {
   .auth-card { width: 92%; max-width: 700px; }
   .auth-left { flex: 0 0 320px; padding: 40px 28px; }

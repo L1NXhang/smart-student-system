@@ -112,7 +112,7 @@ const routes = [
         path: 'message/chat',
         name: 'Chat',
         component: () => import('../views/student/Chat.vue'),
-        meta: { title: '班任留言' },
+        meta: { title: '聊天室' },
       },
       {
         path: 'message/notice',

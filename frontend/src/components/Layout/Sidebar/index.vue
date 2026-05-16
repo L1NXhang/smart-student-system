@@ -79,7 +79,7 @@
             <el-icon><ChatDotRound /></el-icon>
             <span>沟通互动</span>
           </template>
-          <el-menu-item index="/message/chat">班任留言</el-menu-item>
+          <el-menu-item index="/message/chat">聊天室</el-menu-item>
           <el-menu-item index="/message/notice">公告通知</el-menu-item>
           <el-menu-item index="/message/feedback">意见反馈</el-menu-item>
           <el-menu-item index="/message/events">活动报名</el-menu-item>
@@ -138,7 +138,7 @@
 
         <el-menu-item index="/message/chat">
           <el-icon><ChatDotRound /></el-icon>
-          <span>班任留言</span>
+          <span>聊天室</span>
         </el-menu-item>
       </template>
     </el-menu>

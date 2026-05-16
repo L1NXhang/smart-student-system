@@ -1,7 +1,6 @@
 <template>
   <div class="dashboard">
     <FadeContent>
-    <ParticlesBackground :count="40" color="rgba(64, 158, 255, 0.08)" :speed="0.2" />
     <div class="page-header">
       <h2>
         <ShinyText color="#303133" :speed="6">工作台</ShinyText>
@@ -81,7 +80,7 @@ import { ref, onMounted, computed, nextTick } from 'vue'
 import { getAnnouncements, getEvents, getUnreadAnnounceCount } from '@/api/message'
 import { getScholarshipApplications } from '@/api/scholarship'
 import { Trophy, Bell, Clock, Calendar } from '@element-plus/icons-vue'
-import { ParticlesBackground, ShinyText, BlurText, CountUp, Reveal, TiltCard } from '@/components/react-bits'
+import { ShinyText, BlurText, CountUp, Reveal, TiltCard } from '@/components/react-bits'
 
 const announcements = ref([])
 const events = ref([])

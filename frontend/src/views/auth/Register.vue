@@ -1,6 +1,6 @@
 <template>
   <div class="auth-container">
-    <ParticlesBackground :count="40" color="rgba(139, 92, 246, 0.1)" />
+    <AuroraBackground :speed="0.6" :intensity="2.0" color1="#4fc3f7" color2="#66bb6a" color3="#ab47bc" color4="#64ffda" />
     <div class="auth-card" ref="cardRef">
       <!-- Left: Illustration / Branding -->
       <div class="auth-left">
@@ -102,7 +102,7 @@
 import { ref, reactive, onMounted, computed, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { gsap } from 'gsap'
-import { ParticlesBackground, ShinyText, GradientText, BlurText } from '@/components/react-bits'
+import { ShinyText, GradientText, BlurText, AuroraBackground } from '@/components/react-bits'
 import { ElMessage } from 'element-plus'
 import { User, Lock, Phone } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'
