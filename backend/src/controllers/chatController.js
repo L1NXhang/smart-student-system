@@ -1,33 +1,46 @@
-const { ChatMessage, User } = require('../models')
+const { ChatMessage, User, sequelize } = require('../models')
 const { success, error } = require('../utils/response')
 
 exports.getContacts = async (req, res) => {
   try {
-    const contacts = await User.findAll({
-      where: { id: { [require('sequelize').Op.ne]: req.user.id } },
-      attributes: ['id', 'name', 'role'],
-    })
-    const contactList = await Promise.all(contacts.map(async (c) => {
-      const unread = await ChatMessage.count({ where: { sender_id: c.id, receiver_id: req.user.id, is_read: 0 } })
-      const lastMsg = await ChatMessage.findOne({
-        where: {
-          [require('sequelize').Op.or]: [
-            { sender_id: req.user.id, receiver_id: c.id },
-            { sender_id: c.id, receiver_id: req.user.id },
-          ],
-        },
-        order: [['created_at', 'DESC']],
-      })
-      return {
-        id: c.id, name: c.name, role: c.role,
-        unreadCount: unread,
-        lastMessage: lastMsg ? lastMsg.content : null,
-        lastMessageTime: lastMsg ? lastMsg.created_at : null,
-        isOnline: false,
-      }
-    }))
-    return success(res, { contacts: contactList })
-  } catch (e) { return error(res, e.message, 500) }
+    const currentUserId = req.user.id
+    const currentUserRole = req.user.role
+
+    let contacts = []
+
+    if (currentUserRole === 'admin') {
+      // Admins see all non-admin users
+      const [rows] = await sequelize.query(
+        `SELECT u.id, u.username, u.name, u.role, u.status,
+                (SELECT COUNT(*) FROM chat_messages WHERE sender_id = u.id AND receiver_id = ? AND is_read = 0) as unread_count,
+                (SELECT content FROM chat_messages WHERE (sender_id = u.id AND receiver_id = ?) OR (sender_id = ? AND receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message,
+                (SELECT created_at FROM chat_messages WHERE (sender_id = u.id AND receiver_id = ?) OR (sender_id = ? AND receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message_time
+         FROM users u
+         WHERE u.id != ? AND u.role != 'admin'
+         ORDER BY last_message_time DESC`,
+        { replacements: [currentUserId, currentUserId, currentUserId, currentUserId, currentUserId, currentUserId] }
+      )
+      contacts = rows
+    } else {
+      // Students see admins and their class teacher
+      const [rows] = await sequelize.query(
+        `SELECT u.id, u.username, u.name, u.role, u.status,
+                (SELECT COUNT(*) FROM chat_messages WHERE sender_id = u.id AND receiver_id = ? AND is_read = 0) as unread_count,
+                (SELECT content FROM chat_messages WHERE (sender_id = u.id AND receiver_id = ?) OR (sender_id = ? AND receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message,
+                (SELECT created_at FROM chat_messages WHERE (sender_id = u.id AND receiver_id = ?) OR (sender_id = ? AND receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message_time
+         FROM users u
+         WHERE u.id != ? AND (u.role = 'admin' OR u.role = 'teacher')
+         ORDER BY last_message_time DESC`,
+        { replacements: [currentUserId, currentUserId, currentUserId, currentUserId, currentUserId, currentUserId] }
+      )
+      contacts = rows
+    }
+
+    res.json({ contacts })
+  } catch (err) {
+    console.error('getContacts error:', err)
+    res.status(500).json({ message: '获取联系人失败' })
+  }
 }
 
 exports.getMessages = async (req, res) => {

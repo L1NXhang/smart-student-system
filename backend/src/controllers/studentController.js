@@ -1,6 +1,7 @@
 const { User, StudentInfo, sequelize } = require('../models');
 const { success, error, paginate } = require('../utils/response');
 const { Op } = require('sequelize');
+const { getCachedStudentInfo } = require('../utils/getStudentInfo');
 
 // 获取学生详细信息
 const getStudentInfo = async (req, res) => {
@@ -42,13 +43,13 @@ const getStudentInfo = async (req, res) => {
 // 更新学生信息（学生自己修改部分字段）
 const updateStudentInfo = async (req, res) => {
   try {
-    const userId = req.user.id;
     const { phone, email, hobbies, personality, careerGoal } = req.body;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
-    if (!studentInfo) {
+    const cached = await getCachedStudentInfo(req);
+    if (!cached) {
       return error(res, '学生信息不存在', 404);
     }
+    const studentInfo = await StudentInfo.findByPk(cached.id);
 
     const updates = {};
     if (phone !== undefined) updates.phone = phone;
@@ -72,7 +73,7 @@ const submitInfoChange = async (req, res) => {
     const userId = req.user.id;
     const { fieldName, oldValue, newValue, reason } = req.body;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }
@@ -100,7 +101,7 @@ const getInfoChangeRequests = async (req, res) => {
     const userId = req.user.id;
     const { status, page = 1, pageSize = 10 } = req.query;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }
@@ -147,7 +148,7 @@ const submitDifficultyApplication = async (req, res) => {
     const { level, reason } = req.body;
     const materialPath = req.file ? `/uploads/${req.file.filename}` : null;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }
@@ -187,7 +188,7 @@ const getDifficultyApplication = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }
@@ -210,12 +211,12 @@ const getDifficultyApplication = async (req, res) => {
 // 上传学生照片
 const uploadPhoto = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
-    if (!studentInfo) return error(res, '学生信息不存在', 404);
+    const cached = await getCachedStudentInfo(req);
+    if (!cached) return error(res, '学生信息不存在', 404);
     if (!req.file) return error(res, '请选择照片', 400);
 
     const photoPath = `/uploads/${req.file.filename}`;
+    const studentInfo = await StudentInfo.findByPk(cached.id);
     await studentInfo.update({ photo: photoPath });
     return success(res, { photo: photoPath }, '照片上传成功');
   } catch (err) {
@@ -234,7 +235,7 @@ const batchSubmitInfoChange = async (req, res) => {
       return error(res, '请提供变更信息', 400);
     }
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) return error(res, '学生信息不存在', 404);
 
     for (const change of changes) {

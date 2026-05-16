@@ -477,7 +477,9 @@ CREATE TABLE chat_messages (
     FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_sender_id (sender_id),
     INDEX idx_receiver_id (receiver_id),
-    INDEX idx_created_at (created_at)
+    INDEX idx_created_at (created_at),
+    INDEX idx_receiver_read (receiver_id, sender_id, is_read),
+    INDEX idx_conversation (sender_id, receiver_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聊天消息表';
 
 -- 公告表

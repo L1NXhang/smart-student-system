@@ -1,5 +1,6 @@
 const { StudentInfo, sequelize } = require('../models');
 const { success, error, paginate } = require('../utils/response');
+const { getCachedStudentInfo } = require('../utils/getStudentInfo');
 
 // 生涯测评题目
 const assessmentQuestions = {
@@ -73,7 +74,7 @@ const submitAssessment = async (req, res) => {
       return error(res, '无效的测评类型', 400);
     }
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }
@@ -121,7 +122,7 @@ const getAssessmentHistory = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }
@@ -156,7 +157,7 @@ const createAppointment = async (req, res) => {
     const userId = req.user.id;
     const { appointmentDate, appointmentTime, reason } = req.body;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }
@@ -183,7 +184,7 @@ const getMyAppointments = async (req, res) => {
     const userId = req.user.id;
     const { status } = req.query;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }
@@ -215,7 +216,7 @@ const getMyAppointments = async (req, res) => {
 const cancelAppointment = async (req, res) => {
   try {
     const userId = req.user.id;
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) return error(res, '学生信息不存在', 404);
 
     const appointments = await sequelize.query(
@@ -307,7 +308,7 @@ const getJobInfoDetail = async (req, res) => {
     );
 
     // 记录阅读
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (studentInfo) {
       await sequelize.query(
         `INSERT INTO job_info_reads (job_info_id, student_id, read_at)
@@ -333,7 +334,7 @@ const toggleFavorite = async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }

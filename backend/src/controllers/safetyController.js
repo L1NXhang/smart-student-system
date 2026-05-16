@@ -1,10 +1,11 @@
 const { LateReturnRecord, LeaveRecord, SafetyExam, SafetyQuestion, SafetyExamRecord, IncidentReport, StudentInfo, User } = require('../models')
 const { success, error } = require('../utils/response')
+const { getCachedStudentInfo } = require('../utils/getStudentInfo')
 
 // 晚归登记
 exports.submitLateReturn = async (req, res) => {
   try {
-    const student = await StudentInfo.findOne({ where: { user_id: req.user.id } })
+    const student = await getCachedStudentInfo(req)
     if (!student) return error(res, '学生信息不存在', 404)
     const record = await LateReturnRecord.create({
       student_id: student.id,
@@ -18,7 +19,7 @@ exports.submitLateReturn = async (req, res) => {
 
 exports.getLateReturnRecords = async (req, res) => {
   try {
-    const student = await StudentInfo.findOne({ where: { user_id: req.user.id } })
+    const student = await getCachedStudentInfo(req)
     if (!student) return error(res, '学生信息不存在', 404)
     const list = await LateReturnRecord.findAll({ where: { student_id: student.id }, order: [['created_at', 'DESC']] })
     return success(res, list)
@@ -27,7 +28,7 @@ exports.getLateReturnRecords = async (req, res) => {
 
 exports.cancelLateReturn = async (req, res) => {
   try {
-    const student = await StudentInfo.findOne({ where: { user_id: req.user.id } })
+    const student = await getCachedStudentInfo(req)
     if (!student) return error(res, '学生信息不存在', 404)
     const record = await LateReturnRecord.findOne({ where: { id: req.params.id, student_id: student.id } })
     if (!record) return error(res, '记录不存在', 404)
@@ -40,7 +41,7 @@ exports.cancelLateReturn = async (req, res) => {
 // 外出报备
 exports.submitLeave = async (req, res) => {
   try {
-    const student = await StudentInfo.findOne({ where: { user_id: req.user.id } })
+    const student = await getCachedStudentInfo(req)
     if (!student) return error(res, '学生信息不存在', 404)
     const record = await LeaveRecord.create({
       student_id: student.id,
@@ -55,7 +56,7 @@ exports.submitLeave = async (req, res) => {
 
 exports.getLeaveRecords = async (req, res) => {
   try {
-    const student = await StudentInfo.findOne({ where: { user_id: req.user.id } })
+    const student = await getCachedStudentInfo(req)
     if (!student) return error(res, '学生信息不存在', 404)
     const list = await LeaveRecord.findAll({ where: { student_id: student.id }, order: [['created_at', 'DESC']] })
     return success(res, list)
@@ -64,7 +65,7 @@ exports.getLeaveRecords = async (req, res) => {
 
 exports.cancelLeave = async (req, res) => {
   try {
-    const student = await StudentInfo.findOne({ where: { user_id: req.user.id } })
+    const student = await getCachedStudentInfo(req)
     if (!student) return error(res, '学生信息不存在', 404)
     const record = await LeaveRecord.findOne({ where: { id: req.params.id, student_id: student.id } })
     if (!record) return error(res, '记录不存在', 404)
@@ -91,7 +92,7 @@ exports.getExamQuestions = async (req, res) => {
 
 exports.submitExam = async (req, res) => {
   try {
-    const student = await StudentInfo.findOne({ where: { user_id: req.user.id } })
+    const student = await getCachedStudentInfo(req)
     if (!student) return error(res, '学生信息不存在', 404)
     const examId = req.params.id
     const existing = await SafetyExamRecord.findOne({ where: { exam_id: examId, student_id: student.id } })
@@ -119,7 +120,7 @@ exports.submitExam = async (req, res) => {
 
 exports.getExamRecord = async (req, res) => {
   try {
-    const student = await StudentInfo.findOne({ where: { user_id: req.user.id } })
+    const student = await getCachedStudentInfo(req)
     if (!student) return error(res, '学生信息不存在', 404)
     const record = await SafetyExamRecord.findOne({ where: { exam_id: req.params.id, student_id: student.id } })
     return success(res, record)
@@ -129,7 +130,7 @@ exports.getExamRecord = async (req, res) => {
 // 异常上报
 exports.reportIncident = async (req, res) => {
   try {
-    const student = await StudentInfo.findOne({ where: { user_id: req.user.id } })
+    const student = await getCachedStudentInfo(req)
     if (!student) return error(res, '学生信息不存在', 404)
     const incident = await IncidentReport.create({
       student_id: student.id,
@@ -146,7 +147,7 @@ exports.reportIncident = async (req, res) => {
 
 exports.getIncidents = async (req, res) => {
   try {
-    const student = await StudentInfo.findOne({ where: { user_id: req.user.id } })
+    const student = await getCachedStudentInfo(req)
     if (!student) return error(res, '学生信息不存在', 404)
     const list = await IncidentReport.findAll({ where: { student_id: student.id }, order: [['created_at', 'DESC']] })
     return success(res, list)

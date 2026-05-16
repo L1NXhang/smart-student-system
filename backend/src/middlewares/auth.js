@@ -1,17 +1,33 @@
 const jwt = require('jsonwebtoken');
 
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
-  
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ code: 401, message: '未提供认证令牌' });
   }
-  
+
   const token = authHeader.substring(7);
-  
+
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
+
+    // If this is a student user, try to fetch and cache their student_info id
+    if (req.user && req.user.role === 'student') {
+      const sequelize = require('../config/database')
+      const cacheKey = `student_info_${req.user.id}`
+      let studentInfo = sequelize.cacheGet(cacheKey)
+      if (!studentInfo) {
+        const { StudentInfo } = require('../models')
+        studentInfo = await StudentInfo.findOne({ where: { user_id: req.user.id }, attributes: ['id'], raw: true })
+        if (studentInfo) {
+          sequelize.cacheSet(cacheKey, studentInfo)
+        }
+      }
+      req.studentInfo = studentInfo
+    }
+
     next();
   } catch (error) {
     return res.status(401).json({ code: 401, message: '令牌无效或已过期' });
