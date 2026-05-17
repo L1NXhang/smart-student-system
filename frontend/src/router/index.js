@@ -1,5 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import { getToken } from '../utils/auth'
+import { getToken, getUser } from '../utils/auth'
 
 const routes = [
   {
@@ -239,7 +239,12 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const token = getToken()
   if (to.meta.guest) {
-    if (token) return next('/dashboard')
+    if (token) {
+      // 根据角色跳转到对应首页
+      const user = getUser()
+      const isAdmin = user?.role === 'admin'
+      return next(isAdmin ? '/admin/dashboard' : '/dashboard')
+    }
     return next()
   }
   if (!token) return next('/login')

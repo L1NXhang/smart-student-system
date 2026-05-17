@@ -5,7 +5,7 @@ const morgan = require('morgan')
 const path = require('path')
 const { Server } = require('socket.io')
 const jwt = require('jsonwebtoken')
-require('dotenv').config()
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') })
 
 const { sequelize, ChatMessage, User } = require('./models')
 const authRoutes = require('./routes/auth')
