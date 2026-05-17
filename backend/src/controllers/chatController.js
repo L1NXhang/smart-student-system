@@ -9,27 +9,31 @@ exports.getContacts = async (req, res) => {
     let contacts = []
 
     if (currentUserRole === 'admin') {
-      // Admins see all non-admin users
+      // Admins see all non-admin users with avatar from student_info
       const [rows] = await sequelize.query(
         `SELECT u.id, u.username, u.name, u.role, u.status,
+                COALESCE(si.photo, '') as avatar,
                 (SELECT COUNT(*) FROM chat_messages WHERE sender_id = u.id AND receiver_id = ? AND is_read = 0) as unread_count,
                 (SELECT content FROM chat_messages WHERE (sender_id = u.id AND receiver_id = ?) OR (sender_id = ? AND receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message,
                 (SELECT created_at FROM chat_messages WHERE (sender_id = u.id AND receiver_id = ?) OR (sender_id = ? AND receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message_time
          FROM users u
-         WHERE u.id != ? AND u.role != 'admin'
+         LEFT JOIN student_info si ON u.id = si.user_id
+         WHERE u.id != ? AND u.role = 'student'
          ORDER BY last_message_time DESC`,
         { replacements: [currentUserId, currentUserId, currentUserId, currentUserId, currentUserId, currentUserId] }
       )
       contacts = rows
     } else {
-      // Students see admins and their class teacher
+      // Students see all admins (school staff)
       const [rows] = await sequelize.query(
         `SELECT u.id, u.username, u.name, u.role, u.status,
+                COALESCE(si.photo, '') as avatar,
                 (SELECT COUNT(*) FROM chat_messages WHERE sender_id = u.id AND receiver_id = ? AND is_read = 0) as unread_count,
                 (SELECT content FROM chat_messages WHERE (sender_id = u.id AND receiver_id = ?) OR (sender_id = ? AND receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message,
                 (SELECT created_at FROM chat_messages WHERE (sender_id = u.id AND receiver_id = ?) OR (sender_id = ? AND receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message_time
          FROM users u
-         WHERE u.id != ? AND (u.role = 'admin' OR u.role = 'teacher')
+         LEFT JOIN student_info si ON u.id = si.user_id
+         WHERE u.id != ? AND u.role = 'admin'
          ORDER BY last_message_time DESC`,
         { replacements: [currentUserId, currentUserId, currentUserId, currentUserId, currentUserId, currentUserId] }
       )
@@ -72,4 +76,19 @@ exports.getUnreadCounts = async (userId) => {
     group: ['sender_id'],
   })
   return counts.reduce((acc, c) => { acc[c.sender_id] = c.get('count'); return acc }, {})
+}
+
+exports.uploadFile = async (req, res) => {
+  try {
+    if (!req.file) return error(res, '请选择文件', 400)
+    const url = `/uploads/chat/${req.file.filename}`
+    return success(res, {
+      url,
+      name: req.file.originalname,
+      size: req.file.size,
+      type: req.file.mimetype.startsWith('image/') ? 'image' : 'file',
+    }, '上传成功')
+  } catch (e) {
+    return error(res, e.message, 500)
+  }
 }

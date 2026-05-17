@@ -141,7 +141,6 @@
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import gsap from 'gsap'
-import { FadeContent, GradientText } from '@/components/react-bits'
 import { getEvents, createEvent, updateEvent, deleteEvent, getEventRegistrations } from '@/api/message'
 import { useUserStore } from '@/store/user'
 
@@ -334,7 +333,6 @@ onUnmounted(() => {
 }
 
 .page-card {
-  visibility: hidden;
 }
 
 .page-header {

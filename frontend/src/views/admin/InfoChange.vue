@@ -20,11 +20,12 @@
     <!-- Applications Table -->
     <el-card shadow="never" class="table-card">
       <el-table
-        :data="filteredList"
+        :data="applications"
         border
         stripe
         style="width: 100%"
         row-class-name="table-row"
+        v-loading="loading"
       >
         <el-table-column prop="studentName" label="学生姓名" width="100" />
         <el-table-column prop="studentId" label="学号" width="140" />
@@ -52,9 +53,10 @@
         <el-pagination
           v-model:current-page="page"
           :page-size="pageSize"
-          :total="filteredList.length"
+          :total="total"
           layout="total, prev, pager, next"
           background
+          @current-change="loadList"
         />
       </div>
     </el-card>
@@ -116,11 +118,15 @@ import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowRight } from '@element-plus/icons-vue'
 import gsap from 'gsap'
-import { FadeContent, GradientText } from '@/components/react-bits'
+import { getInfoChangeRequests, auditInfoChangeRequest } from '@/api/admin'
 
 const activeTab = ref('pending')
 const page = ref(1)
 const pageSize = ref(10)
+const total = ref(0)
+const loading = ref(false)
+const applications = ref([])
+const statusCounts = ref({ pending: 0, approved: 0, rejected: 0 })
 
 const tabs = [
   { key: 'pending', label: '待审核' },
@@ -134,78 +140,78 @@ const statusTagMap = {
   rejected: { type: 'danger', label: '已拒绝' },
 }
 
-// --- Mock Data ---
-const applications = ref([
-  { id: 1, studentName: '张三', studentId: '20210101001', fieldName: '联系方式', oldValue: '13800000000', newValue: '13800001111', reason: '更换手机号码，原号码已停用。', createdAt: '2025-05-12 10:30', status: 'pending', reviewComment: '' },
-  { id: 2, studentName: '李四', studentId: '20210101002', fieldName: '宿舍号', oldValue: '南2-205', newValue: '南2-308', reason: '因宿舍调整，已搬至新宿舍。', createdAt: '2025-05-12 09:15', status: 'pending', reviewComment: '' },
-  { id: 3, studentName: '王五', studentId: '20210102001', fieldName: '家庭住址', oldValue: '北京市朝阳区XX路1号', newValue: '北京市海淀区YY路2号', reason: '家庭搬迁至新地址。', createdAt: '2025-05-11 14:00', status: 'pending', reviewComment: '' },
-  { id: 4, studentName: '周八', studentId: '20210202001', fieldName: '银行卡号', oldValue: '622200XXXXXXXX1234', newValue: '622588XXXXXXXX5678', reason: '更换银行卡，旧卡已注销。', createdAt: '2025-05-11 11:20', status: 'pending', reviewComment: '' },
-  { id: 5, studentName: '吴九', studentId: '20210301001', fieldName: '联系方式', oldValue: '13800000001', newValue: '13800007777', reason: '手机号更换。', createdAt: '2025-05-10 16:42', status: 'pending', reviewComment: '' },
-  { id: 6, studentName: '孙七', studentId: '20210201001', fieldName: '班主任', oldValue: '钱老师', newValue: '周老师', reason: '因班级调整，班主任已变更。', createdAt: '2025-05-10 08:30', status: 'approved', reviewComment: '情况属实，班主任调整已确认。' },
-  { id: 7, studentName: '赵六', studentId: '20210102002', fieldName: '校外住宿地址', oldValue: '无', newValue: '学校西门XX小区3栋502', reason: '因个人原因申请校外住宿。', createdAt: '2025-05-09 15:00', status: 'approved', reviewComment: '手续齐全，同意校外住宿申请。' },
-  { id: 8, studentName: '郑十', studentId: '20210302001', fieldName: '身份证号', oldValue: 'XXXXXX', newValue: '320102200408080088', reason: '之前登记信息有误，申请更正。', createdAt: '2025-05-08 10:15', status: 'rejected', reviewComment: '请提供身份证原件照片及派出所证明后再申请。' },
-])
+function mapApp(a) {
+  return {
+    id: a.id,
+    studentName: a.student_name || a.studentName || '',
+    studentId: a.student_username || a.studentId || '',
+    fieldName: a.field_name || a.fieldName || '',
+    oldValue: a.old_value || a.oldValue || '',
+    newValue: a.new_value || a.newValue || '',
+    reason: a.reason || '',
+    createdAt: a.created_at || a.createdAt || '',
+    status: a.status || 'pending',
+    reviewComment: a.review_comment || a.reviewComment || '',
+  }
+}
+
+async function loadList() {
+  loading.value = true
+  try {
+    const res = await getInfoChangeRequests({ status: activeTab.value, page: page.value, pageSize: pageSize.value })
+    const data = res.data || res
+    applications.value = (data.list || []).map(mapApp)
+    total.value = data.total || 0
+    updateCounts()
+  } catch { ElMessage.error('加载申请列表失败') } finally {
+    loading.value = false
+    setTimeout(() => animateRows(), 50)
+  }
+}
+
+async function updateCounts() {
+  try {
+    for (const s of ['pending', 'approved', 'rejected']) {
+      const r = await getInfoChangeRequests({ status: s, pageSize: 1 })
+      const d = r.data || r
+      statusCounts.value[s] = d.total || 0
+    }
+  } catch { /* ignore */ }
+}
+
+const countByStatus = (status) => statusCounts.value[status] || 0
+
+function onTabChange() { page.value = 1; loadList() }
 
 const showReview = ref(false)
 const current = ref(null)
 const reviewComment = ref('')
 
-const countByStatus = (status) => applications.value.filter((a) => a.status === status).length
+function openReview(row) { current.value = row; reviewComment.value = ''; showReview.value = true }
 
-const filteredList = computed(() => {
-  return applications.value.filter((a) => a.status === activeTab.value)
-})
-
-function onTabChange() {
-  page.value = 1
-  setTimeout(() => animateRows(), 50)
-}
-
-function openReview(row) {
-  current.value = row
-  reviewComment.value = ''
-  showReview.value = true
-}
-
-function handleApprove() {
-  ElMessageBox.confirm(
-    `确定通过 ${current.value.studentName} 的${current.value.fieldName}变更申请吗？`,
-    '审核确认',
-    { confirmButtonText: '确定通过', cancelButtonText: '取消', type: 'success' }
-  ).then(() => {
-    current.value.status = 'approved'
-    current.value.reviewComment = reviewComment.value || '审核通过。'
+async function handleApprove() {
+  try {
+    await auditInfoChangeRequest(current.value.id, { status: 'approved', comment: reviewComment.value || '审核通过。' })
     ElMessage.success('申请已通过')
     showReview.value = false
-  }).catch(() => {})
+    loadList()
+  } catch { ElMessage.error('操作失败') }
 }
 
-function handleReject() {
-  ElMessageBox.confirm(
-    `确定拒绝 ${current.value.studentName} 的${current.value.fieldName}变更申请吗？`,
-    '审核拒绝',
-    { confirmButtonText: '确定拒绝', cancelButtonText: '取消', type: 'warning' }
-  ).then(() => {
-    current.value.status = 'rejected'
-    current.value.reviewComment = reviewComment.value || '审核不通过。'
+async function handleReject() {
+  try {
+    await auditInfoChangeRequest(current.value.id, { status: 'rejected', comment: reviewComment.value || '审核不通过。' })
     ElMessage.success('申请已拒绝')
     showReview.value = false
-  }).catch(() => {})
+    loadList()
+  } catch { ElMessage.error('操作失败') }
 }
 
 function animateRows() {
-  gsap.from('.table-row', {
-    opacity: 0,
-    y: 20,
-    duration: 0.4,
-    stagger: 0.06,
-    ease: 'power2.out',
-  })
+  gsap.from('.table-row', { opacity: 0, y: 20, duration: 0.4, stagger: 0.06, ease: 'power2.out' })
 }
 
-onMounted(() => {
-  animateRows()
-})
+onMounted(() => { loadList() })
 </script>
 
 <style scoped>

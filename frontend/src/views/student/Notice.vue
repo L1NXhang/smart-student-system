@@ -132,7 +132,7 @@ async function markRead(id) {
 async function fetchUnreadCount() {
   try {
     const res = await getUnreadAnnounceCount()
-    unreadCount.value = res.data?.count || res.data || 0
+    unreadCount.value = res.data?.unread || res.data || 0
   } catch {
     /* ignore */
   }

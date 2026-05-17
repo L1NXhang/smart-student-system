@@ -410,7 +410,6 @@ onUnmounted(() => {
 }
 
 .page-card {
-  visibility: hidden;
 }
 
 .page-header {

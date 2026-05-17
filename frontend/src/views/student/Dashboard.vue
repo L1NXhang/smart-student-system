@@ -106,19 +106,19 @@ function formatDate(d) {
 
 onMounted(async () => {
   try {
-    const [a, e, s, u] = await Promise.all([
+    const [a, e, s, u] = await Promise.allSettled([
       getAnnouncements({ page: 1, pageSize: 5 }),
       getEvents({ page: 1, pageSize: 5 }),
       getScholarshipApplications(),
       getUnreadAnnounceCount(),
     ])
-    announcements.value = a?.data?.list || a?.list || []
-    events.value = e?.data?.list || e?.list || []
-    const list = s?.data?.list || s?.list || []
-    scholarshipCount.value = s?.data?.total || s?.total || list.length
+    announcements.value = a.status === 'fulfilled' ? (a.value?.data?.list || a.value?.list || []) : []
+    events.value = e.status === 'fulfilled' ? (e.value?.data?.list || e.value?.list || []) : []
+    const list = s.status === 'fulfilled' ? (s.value?.data?.list || s.value?.list || []) : []
+    scholarshipCount.value = s.status === 'fulfilled' ? (s.value?.data?.total || s.value?.total || list.length) : 0
     pendingCount.value = list.filter(i => i.status === 'pending').length
-    unreadCount.value = u?.unread ?? u?.data?.unread ?? 0
-    eventCount.value = e?.data?.total || e?.total || events.value.length
+    unreadCount.value = u.status === 'fulfilled' ? (u.value?.unread ?? u.value?.data?.unread ?? 0) : 0
+    eventCount.value = e.status === 'fulfilled' ? (e.value?.data?.total || e.value?.total || events.value.length) : 0
   } catch { loadError.value = true }
   finally { loading.value = false }
 })

@@ -8,6 +8,13 @@ export function getChatMessages(contactId, params) {
   return api.get(`/chat/messages/${contactId}`, { params })
 }
 
+export function uploadChatFile(formData) {
+  return api.post('/chat/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 30000,
+  })
+}
+
 export function getAnnouncements(params) {
   return api.get('/announcements', { params })
 }
@@ -22,6 +29,19 @@ export function markAnnouncementRead(id) {
 
 export function getUnreadAnnounceCount() {
   return api.get('/announcements/unread-count')
+}
+
+// Admin announcement management
+export function createAnnouncement(data) {
+  return api.post('/announcements', data)
+}
+
+export function updateAnnouncement(id, data) {
+  return api.put(`/announcements/${id}`, data)
+}
+
+export function deleteAnnouncement(id) {
+  return api.delete(`/announcements/${id}`)
 }
 
 export function submitFeedback(data) {

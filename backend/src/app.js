@@ -31,7 +31,7 @@ const io = new Server(server, {
   cors: { origin: '*', methods: ['GET', 'POST'] },
 })
 
-const onlineUsers = new Map()
+const onlineUsers = new Map() // userId -> Set<socketId>
 
 io.use((socket, next) => {
   const token = socket.handshake.auth.token
@@ -47,30 +47,67 @@ io.use((socket, next) => {
 
 io.on('connection', (socket) => {
   const userId = socket.user.id
-  onlineUsers.set(userId, socket.id)
-  io.emit('user:online', { userId })
+  if (!onlineUsers.has(userId)) {
+    onlineUsers.set(userId, new Set())
+  }
+  onlineUsers.get(userId).add(socket.id)
+
+  // Only broadcast "online" on first socket for this user
+  if (onlineUsers.get(userId).size === 1) {
+    io.emit('user:online', { userId })
+  }
 
   socket.on('chat:message', async (data) => {
-    const msg = await ChatMessage.create({
-      sender_id: userId,
-      receiver_id: data.receiverId,
-      content: data.content,
-    })
-    const receiverSocketId = onlineUsers.get(data.receiverId)
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit('chat:message', {
-        id: msg.id, senderId: userId, content: data.content, createdAt: msg.created_at,
-      })
+    try {
+      const msgData = {
+        sender_id: userId,
+        receiver_id: data.receiverId,
+        content: data.messageType === 'text' ? data.content : (data.fileName || data.fileUrl || ''),
+        message_type: data.messageType || 'text',
+        file_url: data.fileUrl || null,
+        file_name: data.fileName || null,
+        file_size: data.fileSize || null,
+      }
+      const msg = await ChatMessage.create(msgData)
+
+      const payload = {
+        id: msg.id,
+        senderId: userId,
+        receiverId: data.receiverId,
+        content: msgData.content,
+        messageType: msgData.message_type,
+        fileUrl: msgData.file_url,
+        fileName: msgData.file_name,
+        fileSize: msgData.file_size,
+        createdAt: msg.created_at,
+      }
+
+      // Send to all receiver's tabs
+      const receiverSockets = onlineUsers.get(data.receiverId)
+      if (receiverSockets) {
+        receiverSockets.forEach((sid) => {
+          io.to(sid).emit('chat:message', payload)
+        })
+      }
+
+      // Echo back to all sender's own tabs (for sync)
+      const senderSockets = onlineUsers.get(userId)
+      if (senderSockets) {
+        senderSockets.forEach((sid) => {
+          io.to(sid).emit('chat:message', payload)
+        })
+      }
+    } catch (e) {
+      socket.emit('chat:error', { message: '消息发送失败' })
     }
-    socket.emit('chat:message', {
-      id: msg.id, senderId: userId, content: data.content, createdAt: msg.created_at,
-    })
   })
 
   socket.on('chat:typing', (data) => {
-    const receiverSocketId = onlineUsers.get(data.receiverId)
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit('chat:typing', { senderId: userId })
+    const receiverSockets = onlineUsers.get(data.receiverId)
+    if (receiverSockets) {
+      receiverSockets.forEach((sid) => {
+        io.to(sid).emit('chat:typing', { senderId: userId })
+      })
     }
   })
 
@@ -81,8 +118,14 @@ io.on('connection', (socket) => {
   })
 
   socket.on('disconnect', () => {
-    onlineUsers.delete(userId)
-    io.emit('user:offline', { userId })
+    const userSockets = onlineUsers.get(userId)
+    if (userSockets) {
+      userSockets.delete(socket.id)
+      if (userSockets.size === 0) {
+        onlineUsers.delete(userId)
+        io.emit('user:offline', { userId })
+      }
+    }
   })
 })
 

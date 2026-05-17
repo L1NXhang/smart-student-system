@@ -18,6 +18,7 @@
         stripe
         style="width: 100%"
         row-class-name="table-row"
+        v-loading="loading"
       >
         <el-table-column prop="title" label="岗位名称" min-width="160" />
         <el-table-column prop="quota" label="招聘人数" width="100" align="center" />
@@ -31,8 +32,8 @@
         <el-table-column prop="deadline" label="截止时间" width="140" />
         <el-table-column label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'open' ? 'success' : 'info'" size="small">
-              {{ row.status === 'open' ? '开放' : '关闭' }}
+            <el-tag :type="row.displayStatus === 'open' ? 'success' : 'info'" size="small">
+              {{ row.displayStatus === 'open' ? '开放' : '关闭' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -40,11 +41,11 @@
           <template #default="{ row }">
             <el-button type="primary" link @click="openEditDialog(row)">编辑</el-button>
             <el-button
-              :type="row.status === 'open' ? 'warning' : 'success'"
+              :type="row.displayStatus === 'open' ? 'warning' : 'success'"
               link
               @click="toggleStatus(row)"
             >
-              {{ row.status === 'open' ? '关闭' : '开启' }}
+              {{ row.displayStatus === 'open' ? '关闭' : '开启' }}
             </el-button>
             <el-button type="info" link @click="openApplicants(row)">查看报名</el-button>
           </template>
@@ -55,9 +56,10 @@
         <el-pagination
           v-model:current-page="page"
           :page-size="pageSize"
-          :total="positions.length"
+          :total="total"
           layout="total, prev, pager, next"
           background
+          @current-change="loadPositions"
         />
       </div>
     </el-card>
@@ -133,14 +135,14 @@
         <el-table-column prop="appliedAt" label="报名时间" width="180" />
         <el-table-column label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'hired' ? 'success' : 'warning'" size="small">
-              {{ row.status === 'hired' ? '已录用' : '待处理' }}
+            <el-tag :type="row.status === 'approved' ? 'success' : 'warning'" size="small">
+              {{ row.status === 'approved' ? '已录用' : '待处理' }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="80">
           <template #default="{ row }">
-            <el-dropdown v-if="row.status !== 'hired'" @command="(cmd) => handleApplicantAction(row, cmd)">
+            <el-dropdown v-if="row.status === 'pending'" @command="(cmd) => handleApplicantAction(row, cmd)">
               <el-button type="primary" link>操作</el-button>
               <template #dropdown>
                 <el-dropdown-menu>
@@ -165,111 +167,49 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import gsap from 'gsap'
-import { FadeContent, GradientText } from '@/components/react-bits'
+import {
+  getWorkStudyPositions, createWorkStudyPosition, updateWorkStudyPosition,
+  getWorkStudyApplications, auditWorkStudyApplication
+} from '@/api/admin'
 
 const page = ref(1)
 const pageSize = ref(10)
+const total = ref(0)
+const loading = ref(false)
 
-// --- Mock Data ---
-const positions = ref([
-  {
-    id: 1,
-    title: '图书馆管理员',
-    description: '协助图书馆老师整理图书、维护阅览室秩序、解答读者咨询。',
-    requirements: '认真负责，每周至少工作10小时，能长期坚持者优先。',
-    workTime: '周一至周五 18:00-21:00，周六 9:00-17:00',
-    salary: '15元/小时',
-    quota: 4,
-    deadline: '2025-06-15',
-    status: 'open',
-    appliedCount: 3,
-    applicants: [
-      { id: 101, studentName: '张三', studentId: '20210101001', college: '计算机科学与技术学院', phone: '13800001111', appliedAt: '2025-05-10 14:30', status: 'pending' },
-      { id: 102, studentName: '李四', studentId: '20210101002', college: '计算机科学与技术学院', phone: '13800002222', appliedAt: '2025-05-11 09:15', status: 'pending' },
-      { id: 103, studentName: '陈一', studentId: '20210401001', college: '法学院', phone: '13800009999', appliedAt: '2025-05-12 16:00', status: 'hired' },
-    ],
-  },
-  {
-    id: 2,
-    title: '实验室助管',
-    description: '负责计算机实验室的设备维护、软件安装和环境管理，协助实验课准备工作。',
-    requirements: '计算机相关专业，熟悉Windows和Linux系统，具备基本的网络知识。',
-    workTime: '周一至周五 8:00-12:00 或 14:00-18:00（任选）',
-    salary: '20元/小时',
-    quota: 2,
-    deadline: '2025-06-10',
-    status: 'open',
-    appliedCount: 5,
-    applicants: [
-      { id: 201, studentName: '王五', studentId: '20210102001', college: '电子信息工程学院', phone: '13800003333', appliedAt: '2025-05-09 08:30', status: 'hired' },
-      { id: 202, studentName: '赵六', studentId: '20210102002', college: '电子信息工程学院', phone: '13800004444', appliedAt: '2025-05-10 11:00', status: 'hired' },
-      { id: 203, studentName: '张三', studentId: '20210101001', college: '计算机科学与技术学院', phone: '13800001111', appliedAt: '2025-05-11 15:20', status: 'pending' },
-      { id: 204, studentName: '孙七', studentId: '20210201001', college: '机械工程学院', phone: '13800005555', appliedAt: '2025-05-12 09:00', status: 'pending' },
-      { id: 205, studentName: '吴九', studentId: '20210301001', college: '外国语学院', phone: '13800007777', appliedAt: '2025-05-12 10:30', status: 'pending' },
-    ],
-  },
-  {
-    id: 3,
-    title: '学生事务中心助理',
-    description: '协助学生事务中心处理日常事务，包括文件整理、信息录入、来访接待等。',
-    requirements: '待人热情，沟通能力强，熟练使用Office办公软件。',
-    workTime: '周一至周五 8:00-12:00',
-    salary: '15元/小时',
-    quota: 3,
-    deadline: '2025-06-20',
-    status: 'open',
-    appliedCount: 2,
-    applicants: [
-      { id: 301, studentName: '周八', studentId: '20210202001', college: '经济管理学院', phone: '13800006666', appliedAt: '2025-05-11 08:30', status: 'pending' },
-      { id: 302, studentName: '吴九', studentId: '20210301001', college: '外国语学院', phone: '13800007777', appliedAt: '2025-05-12 14:00', status: 'pending' },
-    ],
-  },
-  {
-    id: 4,
-    title: '校园网络维护员',
-    description: '协助网络中心进行校园网络故障排查、设备巡检和用户技术支持。',
-    requirements: '网络工程或计算机专业，了解网络基础知识，有责任心和团队精神。',
-    workTime: '周一至周五 14:00-18:00',
-    salary: '18元/小时',
-    quota: 2,
-    deadline: '2025-05-30',
-    status: 'closed',
-    appliedCount: 4,
-    applicants: [
-      { id: 401, studentName: '郑一', studentId: '20210101003', college: '计算机科学与技术学院', phone: '13800001112', appliedAt: '2025-05-08 10:00', status: 'hired' },
-      { id: 402, studentName: '郑十', studentId: '20210302001', college: '数学与统计学院', phone: '13800008888', appliedAt: '2025-05-09 16:00', status: 'hired' },
-      { id: 403, studentName: '钱二', studentId: '20210201002', college: '机械工程学院', phone: '13800005556', appliedAt: '2025-05-10 12:00', status: 'pending' },
-      { id: 404, studentName: '周八', studentId: '20210202001', college: '经济管理学院', phone: '13800006666', appliedAt: '2025-05-11 09:00', status: 'pending' },
-    ],
-  },
-  {
-    id: 5,
-    title: '教务处资料整理员',
-    description: '协助教务处整理教学档案、考试材料和相关文档的归档工作。',
-    requirements: '细心耐心，保密意识强，能长期稳定工作。',
-    workTime: '周一、周三、周五 14:00-17:00',
-    salary: '15元/小时',
-    quota: 2,
-    deadline: '2025-06-25',
-    status: 'open',
-    appliedCount: 0,
-    applicants: [],
-  },
-])
+const positions = ref([])
 
-// --- Form ---
+const statusMap = { 1: 'open', 0: 'closed' }
+
+function mapPosition(p) {
+  return {
+    ...p,
+    appliedCount: p.apply_count ?? p.appliedCount ?? 0,
+    hiredCount: p.hired_count ?? p.hiredCount ?? 0,
+    displayStatus: p.status === 1 || p.status === 'open' ? 'open' : 'closed',
+    deadline: p.deadline || '',
+    workTime: p.work_time || p.workTime || '',
+  }
+}
+
+async function loadPositions() {
+  loading.value = true
+  try {
+    const res = await getWorkStudyPositions({ page: page.value, pageSize: pageSize.value })
+    const data = res.data || res
+    positions.value = (data.list || []).map(mapPosition)
+    total.value = data.total || 0
+  } catch { ElMessage.error('加载岗位列表失败') } finally {
+    loading.value = false
+    setTimeout(() => animateRows(), 50)
+  }
+}
+
 const showForm = ref(false)
 const isEditing = ref(false)
 const formRef = ref(null)
 const form = ref({
-  id: null,
-  title: '',
-  description: '',
-  requirements: '',
-  workTime: '',
-  salary: '',
-  quota: 1,
-  deadline: '',
+  id: null, title: '', description: '', requirements: '', workTime: '', salary: '', quota: 1, deadline: '',
 })
 
 function openCreateDialog() {
@@ -279,108 +219,84 @@ function openCreateDialog() {
 
 function openEditDialog(row) {
   isEditing.value = true
-  form.value = { ...row }
+  form.value = {
+    id: row.id, title: row.title, description: row.description,
+    requirements: row.requirements || '', workTime: row.workTime || row.work_time || '',
+    salary: row.salary, quota: row.quota, deadline: row.deadline,
+  }
   showForm.value = true
 }
 
 function resetForm() {
-  form.value = {
-    id: null,
-    title: '',
-    description: '',
-    requirements: '',
-    workTime: '',
-    salary: '',
-    quota: 1,
-    deadline: '',
-  }
+  form.value = { id: null, title: '', description: '', requirements: '', workTime: '', salary: '', quota: 1, deadline: '' }
 }
 
-function submitForm() {
+async function submitForm() {
   if (!form.value.title || !form.value.description || !form.value.workTime || !form.value.salary || !form.value.deadline) {
     ElMessage.warning('请填写所有必填字段')
     return
   }
-  if (isEditing.value) {
-    const idx = positions.value.findIndex((p) => p.id === form.value.id)
-    if (idx !== -1) {
-      positions.value[idx] = { ...positions.value[idx], ...form.value }
+  try {
+    if (isEditing.value) {
+      await updateWorkStudyPosition(form.value.id, { ...form.value, status: undefined })
+      ElMessage.success('岗位信息已更新')
+    } else {
+      await createWorkStudyPosition(form.value)
+      ElMessage.success('岗位已发布')
     }
-    ElMessage.success('岗位信息已更新')
-  } else {
-    const newId = Math.max(...positions.value.map((p) => p.id), 0) + 1
-    positions.value.push({
-      ...form.value,
-      id: newId,
-      appliedCount: 0,
-      applicants: [],
-      status: 'open',
-    })
-    ElMessage.success('岗位已发布')
-  }
-  showForm.value = false
+    showForm.value = false
+    loadPositions()
+  } catch { ElMessage.error(isEditing.value ? '更新失败' : '发布失败') }
 }
 
-function toggleStatus(row) {
-  const newStatus = row.status === 'open' ? 'closed' : 'open'
-  const action = newStatus === 'closed' ? '关闭' : '开启'
-  ElMessageBox.confirm(
-    `确定${action}岗位"${row.title}"吗？${newStatus === 'closed' ? '关闭后学生将无法报名。' : ''}`,
-    '操作确认',
-    { confirmButtonText: `确定${action}`, cancelButtonText: '取消', type: 'warning' }
-  ).then(() => {
-    row.status = newStatus
-    ElMessage.success(`岗位已${action}`)
-  }).catch(() => {})
+async function toggleStatus(row) {
+  const newStatus = row.displayStatus === 'open' ? 0 : 1
+  const actionText = newStatus === 0 ? '关闭' : '开启'
+  try {
+    await updateWorkStudyPosition(row.id, { ...row, status: newStatus, workTime: row.workTime || row.work_time })
+    ElMessage.success(`岗位已${actionText}`)
+    loadPositions()
+  } catch { ElMessage.error('操作失败') }
 }
 
-// --- Applicants ---
+// Applicants
 const showApplicants = ref(false)
 const currentPosition = ref(null)
+const currentApplicants = ref([])
 
-const currentApplicants = computed(() => currentPosition.value?.applicants || [])
-
-function openApplicants(row) {
+async function openApplicants(row) {
   currentPosition.value = row
+  try {
+    const res = await getWorkStudyApplications({ positionId: row.id, pageSize: 100 })
+    const data = res.data || res
+    currentApplicants.value = (data.list || []).map((a) => ({
+      id: a.id,
+      studentName: a.student_name || a.studentName || '',
+      studentId: a.student_username || a.studentId || '',
+      college: a.college || '',
+      phone: a.phone || '',
+      appliedAt: a.created_at || a.appliedAt || '',
+      status: a.status || 'pending',
+    }))
+  } catch { ElMessage.error('加载报名列表失败') }
   showApplicants.value = true
 }
 
-function handleApplicantAction(applicant, command) {
-  if (command === 'hire') {
-    ElMessageBox.confirm(
-      `确定录用 ${applicant.studentName} 吗？`,
-      '录用确认',
-      { confirmButtonText: '确定录用', cancelButtonText: '取消', type: 'success' }
-    ).then(() => {
-      applicant.status = 'hired'
-      ElMessage.success(`已录用 ${applicant.studentName}`)
-    }).catch(() => {})
-  } else if (command === 'reject') {
-    ElMessageBox.confirm(
-      `确定拒绝 ${applicant.studentName} 的报名吗？`,
-      '拒绝确认',
-      { confirmButtonText: '确定拒绝', cancelButtonText: '取消', type: 'warning' }
-    ).then(() => {
-      const pos = currentPosition.value
-      if (pos) {
-        pos.appliedCount = Math.max(0, pos.appliedCount - 1)
-        pos.applicants = pos.applicants.filter((a) => a.id !== applicant.id)
-      }
-      ElMessage.success(`已拒绝 ${applicant.studentName} 的报名`)
-    }).catch(() => {})
-  }
+async function handleApplicantAction(applicant, command) {
+  const actionText = command === 'hire' ? '录用' : '拒绝'
+  try {
+    await auditWorkStudyApplication(applicant.id, { status: command === 'hire' ? 'approved' : 'rejected', comment: '' })
+    ElMessage.success(`已${actionText}该报名`)
+    openApplicants(currentPosition.value)
+    loadPositions()
+  } catch { ElMessage.error('操作失败') }
 }
 
-// --- GSAP ---
-onMounted(() => {
-  gsap.from('.table-row', {
-    opacity: 0,
-    y: 20,
-    duration: 0.4,
-    stagger: 0.06,
-    ease: 'power2.out',
-  })
-})
+function animateRows() {
+  gsap.from('.table-row', { opacity: 0, y: 20, duration: 0.4, stagger: 0.06, ease: 'power2.out' })
+}
+
+onMounted(() => { loadPositions() })
 </script>
 
 <style scoped>

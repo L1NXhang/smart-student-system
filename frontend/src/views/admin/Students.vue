@@ -304,7 +304,6 @@ import { ElMessage, ElNotification } from 'element-plus'
 import { importStudentsFile } from '@/api/admin'
 import api from '@/api'
 import gsap from 'gsap'
-import { FadeContent, GradientText } from '@/components/react-bits'
 
 // ==================== Filters ====================
 const keyword = ref('')

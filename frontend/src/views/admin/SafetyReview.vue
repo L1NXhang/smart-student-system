@@ -19,21 +19,21 @@
             <el-table-column prop="status" label="状态" width="100" align="center">
               <template #default="{ row }">
                 <el-tag :type="statusTagType(row.status)" size="small">
-                  {{ row.status }}
+                  {{ row.displayStatus }}
                 </el-tag>
               </template>
             </el-table-column>
             <el-table-column label="操作" width="180" align="center" fixed="right">
               <template #default="{ row }">
                 <el-button
-                  v-if="row.status === '待审核'"
+                  v-if="row.status === 'pending'"
                   type="success"
                   size="small"
                   link
                   @click="handleApprove('lateReturn', row)"
                 >通过</el-button>
                 <el-button
-                  v-if="row.status === '待审核'"
+                  v-if="row.status === 'pending'"
                   type="danger"
                   size="small"
                   link
@@ -49,7 +49,7 @@
 
         <!-- 外出报备审核 -->
         <el-tab-pane label="外出报备审核" name="outing">
-          <el-table :data="outingList" stripe border style="width: 100%">
+          <el-table :data="outingList" stripe border style="width: 100%" v-loading="loading">
             <el-table-column prop="studentName" label="学生姓名" min-width="100" />
             <el-table-column prop="studentId" label="学号" min-width="130" />
             <el-table-column prop="date" label="日期" min-width="110" />
@@ -59,21 +59,21 @@
             <el-table-column prop="status" label="状态" width="100" align="center">
               <template #default="{ row }">
                 <el-tag :type="statusTagType(row.status)" size="small">
-                  {{ row.status }}
+                  {{ row.displayStatus }}
                 </el-tag>
               </template>
             </el-table-column>
             <el-table-column label="操作" width="180" align="center" fixed="right">
               <template #default="{ row }">
                 <el-button
-                  v-if="row.status === '待审核'"
+                  v-if="row.status === 'pending'"
                   type="success"
                   size="small"
                   link
                   @click="handleApprove('outing', row)"
                 >通过</el-button>
                 <el-button
-                  v-if="row.status === '待审核'"
+                  v-if="row.status === 'pending'"
                   type="danger"
                   size="small"
                   link
@@ -101,8 +101,8 @@
         </el-form-item>
         <el-form-item label="审核结果">
           <el-radio-group v-model="reviewDialog.result">
-            <el-radio label="approve">通过</el-radio>
-            <el-radio label="reject">拒绝</el-radio>
+            <el-radio label="approved">通过</el-radio>
+            <el-radio label="rejected">拒绝</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="审核意见">
@@ -147,55 +147,84 @@
 
 <script setup>
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import gsap from 'gsap'
-import { FadeContent, GradientText } from '@/components/react-bits'
+import { getLateReturnList, auditLateReturn, getLeaveList, auditLeave } from '@/api/safety'
 
 const pageRef = ref(null)
 const activeTab = ref('lateReturn')
+const loading = ref(false)
 
 const reviewDialog = reactive({
-  visible: false,
-  type: '',
-  row: null,
-  result: 'approve',
-  comment: '',
+  visible: false, type: '', row: null, result: 'approved', comment: '',
 })
 
 const detailDialog = reactive({
-  visible: false,
-  row: null,
+  visible: false, row: null,
 })
 
-// --- Mock Data: 晚归 ---
-const lateReturnList = ref([
-  { id: 1, studentName: '张伟', studentId: '20221102001', date: '2026-05-12', expectedReturn: '22:30', reason: '参加学术讲座', status: '待审核' },
-  { id: 2, studentName: '李娜', studentId: '20221102002', date: '2026-05-12', expectedReturn: '22:00', reason: '实验室科研项目', status: '待审核' },
-  { id: 3, studentName: '王磊', studentId: '20221102003', date: '2026-05-11', expectedReturn: '21:30', reason: '社团活动排练', status: '已通过' },
-  { id: 4, studentName: '赵敏', studentId: '20221102004', date: '2026-05-11', expectedReturn: '23:00', reason: '家人临时来访', status: '已拒绝' },
-  { id: 5, studentName: '孙浩然', studentId: '20221102005', date: '2026-05-10', expectedReturn: '22:00', reason: '兼职工作', status: '已通过' },
-  { id: 6, studentName: '周小燕', studentId: '20221102006', date: '2026-05-10', expectedReturn: '21:00', reason: '参加竞赛培训', status: '待审核' },
-])
+const lateReturnList = ref([])
+const outingList = ref([])
 
-// --- Mock Data: 外出报备 ---
-const outingList = ref([
-  { id: 1, studentName: '陈刚', studentId: '20221103001', date: '2026-05-13', destination: '南充市顺庆区', purpose: '参加Java开发培训', expectedReturn: '2026-05-13', status: '待审核' },
-  { id: 2, studentName: '刘芳', studentId: '20221103002', date: '2026-05-13', destination: '成都市', purpose: '面试实习岗位', expectedReturn: '2026-05-14', status: '待审核' },
-  { id: 3, studentName: '黄强', studentId: '20221103003', date: '2026-05-12', destination: '南充市高坪区', purpose: '参加志愿者活动', expectedReturn: '2026-05-12', status: '已通过' },
-  { id: 4, studentName: '吴丽', studentId: '20221103004', date: '2026-05-11', destination: '重庆市', purpose: '探亲', expectedReturn: '2026-05-13', status: '已通过' },
-  { id: 5, studentName: '马超', studentId: '20221103005', date: '2026-05-11', destination: '成都市', purpose: '参加学科竞赛', expectedReturn: '2026-05-12', status: '已拒绝' },
-  { id: 6, studentName: '林小红', studentId: '20221103006', date: '2026-05-10', destination: '南充市嘉陵区', purpose: '购买学习用品', expectedReturn: '2026-05-10', status: '待审核' },
-])
+const statusMap = { pending: '待审核', approved: '已通过', rejected: '已拒绝', cancelled: '已取消' }
+
+function mapLateReturn(r) {
+  return {
+    id: r.id,
+    studentName: r.student?.user?.name || r.studentName || '',
+    studentId: r.student?.user?.username || r.studentId || '',
+    date: r.return_date || r.date || '',
+    expectedReturn: r.expected_time || r.expectedReturn || '',
+    reason: r.reason || '',
+    status: r.status || 'pending',
+    displayStatus: statusMap[r.status] || r.status,
+  }
+}
+
+function mapLeave(r) {
+  return {
+    id: r.id,
+    studentName: r.student?.user?.name || r.studentName || '',
+    studentId: r.student?.user?.username || r.studentId || '',
+    date: r.leave_date || r.date || '',
+    destination: r.destination || '',
+    purpose: r.reason || r.purpose || '',
+    expectedReturn: r.expected_return || r.expectedReturn || '',
+    status: r.status || 'pending',
+    displayStatus: statusMap[r.status] || r.status,
+  }
+}
+
+async function loadLateReturn() {
+  try {
+    const res = await getLateReturnList({ pageSize: 100 })
+    const data = res.data || res
+    lateReturnList.value = (data.list || []).map(mapLateReturn)
+  } catch { ElMessage.error('加载晚归列表失败') }
+}
+
+async function loadLeave() {
+  try {
+    const res = await getLeaveList({ pageSize: 100 })
+    const data = res.data || res
+    outingList.value = (data.list || []).map(mapLeave)
+  } catch { ElMessage.error('加载外出列表失败') }
+}
+
+function loadAll() {
+  loading.value = true
+  Promise.all([loadLateReturn(), loadLeave()]).finally(() => { loading.value = false })
+}
 
 function statusTagType(status) {
-  const map = { '待审核': 'warning', '已通过': 'success', '已拒绝': 'danger' }
+  const map = { pending: 'warning', approved: 'success', rejected: 'danger', cancelled: 'info' }
   return map[status] || 'info'
 }
 
 function handleApprove(type, row) {
   reviewDialog.type = type
   reviewDialog.row = row
-  reviewDialog.result = 'approve'
+  reviewDialog.result = 'approved'
   reviewDialog.comment = ''
   reviewDialog.visible = true
 }
@@ -203,20 +232,25 @@ function handleApprove(type, row) {
 function handleReject(type, row) {
   reviewDialog.type = type
   reviewDialog.row = row
-  reviewDialog.result = 'reject'
+  reviewDialog.result = 'rejected'
   reviewDialog.comment = ''
   reviewDialog.visible = true
 }
 
-function submitReview() {
-  const actionText = reviewDialog.result === 'approve' ? '通过' : '拒绝'
-  ElMessage.success(`已${actionText}该申请（Mock）`)
-  const list = reviewDialog.type === 'lateReturn' ? lateReturnList : outingList
-  const target = list.value.find((i) => i.id === reviewDialog.row.id)
-  if (target) {
-    target.status = reviewDialog.result === 'approve' ? '已通过' : '已拒绝'
+async function submitReview() {
+  try {
+    if (reviewDialog.type === 'lateReturn') {
+      await auditLateReturn(reviewDialog.row.id, { status: reviewDialog.result, reviewComment: reviewDialog.comment })
+    } else {
+      await auditLeave(reviewDialog.row.id, { status: reviewDialog.result, reviewComment: reviewDialog.comment })
+    }
+    const actionText = reviewDialog.result === 'approved' ? '通过' : '拒绝'
+    ElMessage.success(`已${actionText}该申请`)
+    reviewDialog.visible = false
+    loadAll()
+  } catch {
+    ElMessage.error('审核失败')
   }
-  reviewDialog.visible = false
 }
 
 function openDetail(row) {
@@ -224,30 +258,15 @@ function openDetail(row) {
   detailDialog.visible = true
 }
 
-// --- GSAP ---
 let ctx
 onMounted(() => {
+  loadAll()
   ctx = gsap.context(() => {
-    gsap.from('.page-card', {
-      y: 30,
-      autoAlpha: 0,
-      duration: 0.5,
-      ease: 'power2.out',
-    })
-    gsap.from('.el-table__row', {
-      y: 20,
-      autoAlpha: 0,
-      duration: 0.4,
-      stagger: 0.06,
-      ease: 'power2.out',
-      delay: 0.2,
-    })
+    gsap.from('.page-card', { y: 30, autoAlpha: 0, duration: 0.5, ease: 'power2.out' })
   }, pageRef.value)
 })
 
-onUnmounted(() => {
-  ctx?.revert()
-})
+onUnmounted(() => { ctx?.revert() })
 </script>
 
 <style scoped>
@@ -256,7 +275,6 @@ onUnmounted(() => {
 }
 
 .page-card {
-  visibility: hidden;
 }
 
 .page-header {

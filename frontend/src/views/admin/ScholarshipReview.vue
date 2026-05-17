@@ -20,11 +20,12 @@
     <!-- Applications Table -->
     <el-card shadow="never" class="table-card">
       <el-table
-        :data="filteredList"
+        :data="applications"
         border
         stripe
         style="width: 100%"
         row-class-name="table-row"
+        v-loading="loading"
       >
         <el-table-column prop="studentName" label="学生姓名" width="100" />
         <el-table-column prop="studentId" label="学号" width="140" />
@@ -53,9 +54,10 @@
         <el-pagination
           v-model:current-page="page"
           :page-size="pageSize"
-          :total="filteredList.length"
+          :total="total"
           layout="total, prev, pager, next"
           background
+          @current-change="loadList"
         />
       </div>
     </el-card>
@@ -108,11 +110,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import gsap from 'gsap'
-import { FadeContent, GradientText } from '@/components/react-bits'
+import { getScholarshipApplications, auditScholarshipApplication } from '@/api/admin'
 
 const activeTab = ref('pending')
 const page = ref(1)
 const pageSize = ref(10)
+const total = ref(0)
+const loading = ref(false)
+const applications = ref([])
 
 const tabs = [
   { key: 'pending', label: '待审核' },
@@ -126,30 +131,70 @@ const statusTagMap = {
   rejected: { type: 'danger', label: '已拒绝' },
 }
 
-// --- Mock Data ---
-const applications = ref([
-  { id: 1, studentName: '张三', studentId: '20210101001', college: '计算机科学与技术学院', major: '计算机科学与技术', scholarshipType: '国家奖学金', gpa: '4.2', rank: '1/120', reason: '在校期间成绩优异，连续三年获得校级一等奖学金，发表SCI论文两篇，参与国家级大创项目一项并顺利结题。积极参加学科竞赛，获得蓝桥杯全国二等奖、数学建模省一等奖。', awards: '蓝桥杯全国二等奖、数学建模省一等奖、校级一等奖学金', materials: [{ name: '成绩单.pdf' }, { name: '论文录用证明.pdf' }], createdAt: '2025-05-10 14:30', status: 'pending', reviewComment: '' },
-  { id: 2, studentName: '李四', studentId: '20210101002', college: '计算机科学与技术学院', major: '软件工程', scholarshipType: '学业奖学金', gpa: '3.8', rank: '5/90', reason: '学习刻苦，成绩排名专业前5%，积极参与科研项目，担任班长期间组织多项班级活动，具有较强的组织协调能力。', awards: '校级二等奖学金、优秀学生干部', materials: [{ name: '成绩单.pdf' }], createdAt: '2025-05-11 09:15', status: 'pending', reviewComment: '' },
-  { id: 3, studentName: '王五', studentId: '20210102001', college: '电子信息工程学院', major: '电子信息工程', scholarshipType: '国家励志奖学金', gpa: '3.5', rank: '12/100', reason: '家庭经济困难，通过勤工助学自筹生活费。学习努力，积极参加社会实践和志愿服务活动，志愿服务时长累计超过200小时。', awards: '校级三等奖学金、优秀志愿者', materials: [{ name: '困难认定表.pdf' }, { name: '成绩单.pdf' }], createdAt: '2025-05-10 16:42', status: 'pending', reviewComment: '' },
-  { id: 4, studentName: '赵六', studentId: '20210102002', college: '电子信息工程学院', major: '通信工程', scholarshipType: '校级奖学金', gpa: '3.9', rank: '3/85', reason: '专业成绩优异，创新能力突出，拥有一项实用新型专利，参与导师国家重点研发计划项目，担任实验室助教。', awards: '校级一等奖学金、创新创业先进个人', materials: [{ name: '专利证书.pdf' }], createdAt: '2025-05-09 11:20', status: 'pending', reviewComment: '' },
-  { id: 5, studentName: '孙七', studentId: '20210201001', college: '机械工程学院', major: '机械设计制造及其自动化', scholarshipType: '国家奖学金', gpa: '4.1', rank: '2/110', reason: '专业排名前2%，获全国大学生机械创新设计大赛一等奖，主持省级大创项目一项，发表核心期刊论文一篇。', awards: '全国大学生机械创新设计大赛一等奖、省级大创项目负责人', materials: [{ name: '获奖证书.pdf' }, { name: '论文.pdf' }], createdAt: '2025-05-08 08:30', status: 'approved', reviewComment: '材料齐全，成绩优异，符合评选条件。' },
-  { id: 6, studentName: '周八', studentId: '20210202001', college: '经济管理学院', major: '工商管理', scholarshipType: '学业奖学金', gpa: '3.6', rank: '8/95', reason: '学习认真刻苦，具备较强的团队协作能力，在ERP沙盘模拟竞赛中获得团队一等奖。', awards: 'ERP沙盘模拟一等奖', materials: [{ name: '成绩单.pdf' }], createdAt: '2025-05-07 15:00', status: 'approved', reviewComment: '审核通过，成绩符合要求。' },
-  { id: 7, studentName: '吴九', studentId: '20210301001', college: '外国语学院', major: '英语', scholarshipType: '校级奖学金', gpa: '3.2', rank: '20/70', reason: '参加校外英语培训机构兼职教学，实际工作经验丰富，但学业成绩排名不够突出。', awards: '无', materials: [], createdAt: '2025-05-06 10:45', status: 'rejected', reviewComment: '学业成绩未达到评选标准，建议努力学习提高绩点后再申请。' },
-  { id: 8, studentName: '郑十', studentId: '20210302001', college: '数学与统计学院', major: '应用数学', scholarshipType: '国家励志奖学金', gpa: '3.7', rank: '6/80', reason: '家庭困难，学习用功，获得数学竞赛省级二等奖，担任班级学习委员，帮助同学提高学习成绩。', awards: '数学竞赛省级二等奖', materials: [{ name: '困难认定表.pdf' }, { name: '获奖证书.pdf' }], createdAt: '2025-05-05 14:20', status: 'approved', reviewComment: '经核实困难情况属实，成绩符合要求，通过审核。' },
-])
-
 const showDetail = ref(false)
 const current = ref(null)
 
-const countByStatus = (status) => applications.value.filter((a) => a.status === status).length
+const statusCounts = ref({ pending: 0, approved: 0, rejected: 0 })
 
-const filteredList = computed(() => {
-  return applications.value.filter((a) => a.status === activeTab.value)
-})
+const countByStatus = (status) => statusCounts.value[status] || 0
+
+function mapApp(a) {
+  return {
+    id: a.id,
+    studentName: a.student_name || a.studentName || '',
+    studentId: a.student_username || a.studentId || '',
+    scholarshipType: a.scholarship_type || a.scholarshipType || '',
+    reason: a.reason || '',
+    gpa: a.gpa || '',
+    rank: a.rank || '',
+    college: a.college || '',
+    major: a.major || '',
+    awards: a.awards || '',
+    materials: a.materials || [],
+    createdAt: a.created_at || a.createdAt || '',
+    status: a.status || 'pending',
+    reviewComment: a.review_comment || a.reviewComment || '',
+  }
+}
+
+async function loadList() {
+  loading.value = true
+  try {
+    const res = await getScholarshipApplications({ status: activeTab.value, page: page.value, pageSize: pageSize.value })
+    const data = res.data || res
+    applications.value = (data.list || []).map(mapApp)
+    total.value = data.total || 0
+
+    // Load all status counts
+    const allRes = await getScholarshipApplications({ pageSize: 1 })
+    const allData = allRes.data || allRes
+    if (allData.list) {
+      // We need separate counts per status — just sum from what we have
+      // Actually, let's fetch counts from each tab
+    }
+    // Simple: we'll just use local counts for now
+    updateCounts()
+  } catch {
+    ElMessage.error('加载申请列表失败')
+  } finally {
+    loading.value = false
+    setTimeout(() => animateRows(), 50)
+  }
+}
+
+async function updateCounts() {
+  try {
+    for (const s of ['pending', 'approved', 'rejected']) {
+      const r = await getScholarshipApplications({ status: s, pageSize: 1 })
+      const d = r.data || r
+      statusCounts.value[s] = d.total || 0
+    }
+  } catch { /* ignore */ }
+}
 
 function onTabChange() {
   page.value = 1
-  setTimeout(() => animateRows(), 50)
+  loadList()
 }
 
 function openDetail(row) {
@@ -157,19 +202,21 @@ function openDetail(row) {
   showDetail.value = true
 }
 
-function handleApprove(row) {
+async function handleApprove(row) {
   ElMessageBox.confirm(
     `确定通过 ${row.studentName} 的${row.scholarshipType}申请吗？`,
     '审核确认',
     { confirmButtonText: '确定通过', cancelButtonText: '取消', type: 'success' }
-  ).then(() => {
-    row.status = 'approved'
-    row.reviewComment = '审核通过。'
-    ElMessage.success(`已通过 ${row.studentName} 的申请`)
+  ).then(async () => {
+    try {
+      await auditScholarshipApplication(row.id, { status: 'approved', comment: '审核通过。' })
+      ElMessage.success(`已通过 ${row.studentName} 的申请`)
+      loadList()
+    } catch { ElMessage.error('操作失败') }
   }).catch(() => {})
 }
 
-function handleReject(row) {
+async function handleReject(row) {
   ElMessageBox.prompt(
     '请输入拒绝原因',
     '审核拒绝',
@@ -177,25 +224,24 @@ function handleReject(row) {
       inputValidator: (val) => val ? true : '请输入拒绝原因',
       inputErrorMessage: '拒绝原因不能为空'
     }
-  ).then(({ value }) => {
-    row.status = 'rejected'
-    row.reviewComment = value
-    ElMessage.success(`已拒绝 ${row.studentName} 的申请`)
+  ).then(async ({ value }) => {
+    try {
+      await auditScholarshipApplication(row.id, { status: 'rejected', comment: value })
+      ElMessage.success(`已拒绝 ${row.studentName} 的申请`)
+      loadList()
+    } catch { ElMessage.error('操作失败') }
   }).catch(() => {})
 }
 
 function animateRows() {
   gsap.from('.table-row', {
-    opacity: 0,
-    y: 20,
-    duration: 0.4,
-    stagger: 0.06,
-    ease: 'power2.out',
+    opacity: 0, y: 20, duration: 0.4, stagger: 0.06, ease: 'power2.out',
   })
 }
 
 onMounted(() => {
-  animateRows()
+  loadList()
+  // Don't animate on mount, wait for data
 })
 </script>
 
