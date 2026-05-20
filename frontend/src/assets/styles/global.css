@@ -205,8 +205,18 @@ a:hover { color: var(--color-primary-dark); }
   /* ── Element Plus overrides ── */
   .el-table {
     font-size: 13px;
-    overflow-x: auto;
-    display: block;
+  }
+  .el-table__header-wrapper,
+  .el-table__body-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .el-table__body-wrapper::-webkit-scrollbar {
+    height: 4px;
+  }
+  .el-table__body-wrapper::-webkit-scrollbar-thumb {
+    background: #c0c4cc;
+    border-radius: 2px;
   }
   .el-form-item {
     display: block !important;

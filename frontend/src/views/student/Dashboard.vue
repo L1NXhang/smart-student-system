@@ -6,7 +6,7 @@
         <ShinyText color="#303133" :speed="6">工作台</ShinyText>
       </h2>
       <p>
-        <BlurText text="欢迎回来，快速查看你的学习与生活动态" :duration="0.5" :stagger="0.03" />
+        <BlurText text="欢迎回来，快速查看你的学习与生活动态" :duration="0.8" :stagger="0.05" />
       </p>
     </div>
 

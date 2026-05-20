@@ -10,6 +10,11 @@ import { ElMessage, ElImageViewer } from 'element-plus'
 const currentUser = getUser()
 const currentUserId = currentUser?.id
 
+// ─── mobile ────────────────────────────────────────────────────────
+const isMobile = ref(window.innerWidth < 768)
+const showChat = ref(false)
+function onResize() { isMobile.value = window.innerWidth < 768 }
+
 // ─── contacts ────────────────────────────────────────────────────
 const contacts = ref([])
 const searchQuery = ref('')
@@ -149,7 +154,15 @@ function selectContact(contact) {
   activeContactId.value = contact.id
   contact.unreadCount = 0
   messages.value = []
+  showChat.value = true
   loadMessages(contact.id)
+}
+
+function backToContacts() {
+  markCurrentAsRead()
+  activeContactId.value = null
+  showChat.value = false
+  messages.value = []
 }
 
 function markCurrentAsRead() {
@@ -314,6 +327,7 @@ function animateNewMessage() {
 
 // ─── lifecycle ───────────────────────────────────────────────────
 onMounted(async () => {
+  window.addEventListener('resize', onResize)
   // 1. connect socket first so we receive online status
   socket = io('/', {
     auth: { token: getToken() },
@@ -397,6 +411,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('resize', onResize)
   if (socket) { socket.disconnect(); socket = null }
   if (gsapCtx) { gsapCtx.revert(); gsapCtx = null }
   if (typingTimer) { clearTimeout(typingTimer); typingTimer = null }
@@ -407,7 +422,7 @@ onUnmounted(() => {
 <template>
   <div class="chat-page">
     <!-- Left: Contact List -->
-    <aside class="chat-sidebar">
+    <aside class="chat-sidebar" :class="{ 'mobile-hidden': isMobile && showChat, 'mobile-full': isMobile && !showChat }">
       <div class="sidebar-header"><span>联系人</span></div>
       <div class="sidebar-search">
         <el-input v-model="searchQuery" placeholder="搜索联系人" :prefix-icon="Search" clearable />
@@ -445,10 +460,13 @@ onUnmounted(() => {
     </aside>
 
     <!-- Right: Chat Area -->
-    <main class="chat-main" @paste="handlePaste">
+    <main class="chat-main" :class="{ 'mobile-hidden': isMobile && !showChat, 'mobile-full': isMobile && showChat }" @paste="handlePaste">
       <template v-if="activeContact">
         <header class="chat-header">
           <div class="chat-header-left">
+            <button v-if="isMobile" class="back-btn" @click="backToContacts">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
             <el-avatar :src="activeContact.avatar" :size="36">
               {{ activeContact.name ? activeContact.name.charAt(0) : '' }}
             </el-avatar>
@@ -670,8 +688,24 @@ onUnmounted(() => {
 .chat-empty { flex: 1; display: flex; align-items: center; justify-content: center; }
 
 @media (max-width: 768px) {
-  .chat-sidebar { width: 260px; }
+  .chat-page { position: relative; overflow: hidden; }
+  .chat-sidebar { width: 100% !important; }
+  .chat-main { width: 100%; }
+
+  .mobile-hidden { display: none !important; }
+  .mobile-full { display: flex !important; }
+
+  .back-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border: none; background: none;
+    color: #606266; cursor: pointer; border-radius: 50%;
+    transition: background 0.2s; margin-right: 4px;
+  }
+  .back-btn:hover { background: #f0f0f0; }
+
   .chat-messages { padding: 12px 16px; }
   .message-item { max-width: 85%; }
+  .chat-input-area { padding: 8px 16px 12px; }
+  .msg-image { max-width: 180px; max-height: 180px; }
 }
 </style>

@@ -59,7 +59,7 @@ const getMyScholarshipApplications = async (req, res) => {
 
     const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
-      return error(res, '学生信息不存在', 404);
+      return res.json({ code: 200, message: '获取成功', data: { list: [], total: 0, page: 1, pageSize: 10 } });
     }
 
     let whereClause = 'student_id = ?';

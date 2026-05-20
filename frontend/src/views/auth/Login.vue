@@ -15,7 +15,7 @@
             <img src="@/assets/logo.png" alt="校徽" class="school-logo" />
           </div>
           <h1 class="mobile-system-name">
-            <ShinyText color="#1f2937" :speed="5">智慧学工</ShinyText>
+            <ShinyText color="#1f2937" :speed="12">智慧学工</ShinyText>
           </h1>
         </div>
 
@@ -101,7 +101,7 @@
             <img src="@/assets/logo.png" alt="校徽" class="school-logo" />
           </div>
           <h1 class="system-name">
-            <ShinyText color="#ffffff" :speed="5">智慧学工系统</ShinyText>
+            <ShinyText color="#ffffff" :speed="10">智慧学工系统</ShinyText>
           </h1>
           <p class="system-subtitle">Smart Student Affairs System</p>
         </div>

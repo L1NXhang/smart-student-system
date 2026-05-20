@@ -9,8 +9,11 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST,
     port: process.env.DB_PORT || 3306,
     dialect: 'mysql',
+    charset: 'utf8mb4',
+    collate: 'utf8mb4_unicode_ci',
     dialectOptions: {
       charset: 'utf8mb4',
+      collation: 'utf8mb4_unicode_ci',
     },
     define: {
       charset: 'utf8mb4',
@@ -26,6 +29,9 @@ const sequelize = new Sequelize(
     }
   }
 );
+
+// Force utf8mb4 charset on all connections on startup
+sequelize.query('SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci').catch(() => {})
 
 // Simple memory cache for frequent lookups
 const cache = new Map()

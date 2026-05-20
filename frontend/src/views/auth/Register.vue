@@ -9,7 +9,7 @@
             <img src="@/assets/logo.png" alt="校徽" class="school-logo" />
           </div>
           <h1 class="system-name">
-            <ShinyText color="#ffffff" :speed="6">智慧学工系统</ShinyText>
+            <ShinyText color="#ffffff" :speed="10">智慧学工系统</ShinyText>
           </h1>
           <p class="system-subtitle">Smart Student Affairs System</p>
         </div>
