@@ -193,7 +193,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import gsap from 'gsap'
 import { ElMessage } from 'element-plus'
@@ -311,6 +311,15 @@ async function handleLogin() {
     }
   } finally { loading.value = false }
 }
+
+watch(captchaPassed, (val) => {
+  if (val && loginBtnRef.value) {
+    nextTick(() => {
+      const el = loginBtnRef.value.$el || loginBtnRef.value
+      gsap.fromTo(el, { scale: 1 }, { scale: 1.04, duration: 0.2, yoyo: true, repeat: 1, ease: 'power2.out' })
+    })
+  }
+})
 
 onMounted(() => {
   isMobile.value = window.innerWidth < 768
@@ -475,7 +484,10 @@ onUnmounted(() => {
   letter-spacing: 6px;
   background: linear-gradient(135deg, #3b82f6, #2563eb);
   border: none;
-  transition: all 0.3s ease;
+  transition: all 0.3s ease, opacity 0.15s ease;
+}
+.login-btn:disabled {
+  opacity: 0.5;
 }
 .login-btn:not(:disabled):hover {
   transform: translateY(-2px);

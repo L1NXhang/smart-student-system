@@ -501,6 +501,7 @@ onUnmounted(() => {
             class="message-item"
             :class="{ self: isSelf(msg) }"
           >
+            <span v-if="!isSelf(msg)" class="message-sender">{{ activeContact?.name }}</span>
             <div class="message-bubble">
               <template v-if="msg.sending">
                 <template v-if="msg.messageType === 'image'">
@@ -642,9 +643,10 @@ onUnmounted(() => {
 .messages-empty { display: flex; justify-content: center; align-items: center; height: 100%; }
 
 /* ─── Message Bubble ─── */
-.message-item { display: flex; max-width: 70%; }
-.message-item.self { align-self: flex-end; }
-.message-item:not(.self) { align-self: flex-start; }
+.message-item { display: flex; flex-direction: column; max-width: 70%; }
+.message-sender { font-size: 11px; color: #909399; margin-bottom: 2px; padding-left: 4px; }
+.message-item.self { align-self: flex-end; align-items: flex-end; }
+.message-item:not(.self) { align-self: flex-start; align-items: flex-start; }
 .message-bubble { padding: 10px 16px; border-radius: 12px; word-break: break-word; overflow: hidden; }
 .message-item:not(.self) .message-bubble { background: #f2f3f5; border-bottom-left-radius: 4px; }
 .message-item.self .message-bubble { background: #409eff; color: #fff; border-bottom-right-radius: 4px; }

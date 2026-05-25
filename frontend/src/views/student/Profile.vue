@@ -263,7 +263,7 @@
 
         <!-- 操作按钮 -->
         <div class="form-actions" v-if="!editing">
-          <el-button type="primary" size="large" @click="startEdit">编辑信息</el-button>
+          <el-button type="primary" size="large" :icon="Edit" class="edit-profile-btn" @click="startEdit">编辑资料</el-button>
           <el-button size="large" @click="handleExport">导出个人信息</el-button>
         </div>
         <div class="form-actions" v-else>
@@ -310,7 +310,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { UserFilled, Plus, Delete } from '@element-plus/icons-vue'
+import { UserFilled, Plus, Delete, Edit } from '@element-plus/icons-vue'
 import { Reveal, GradientText } from '@/components/react-bits'
 import {
   getStudentInfo, uploadPhoto, batchSubmitInfoChange,
@@ -602,6 +602,38 @@ onMounted(() => {
 .form-actions {
   display: flex; justify-content: center; gap: 16px;
   margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--el-border-color-lighter);
+}
+.edit-profile-btn {
+  padding: 12px 32px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  letter-spacing: 2px;
+  background: linear-gradient(135deg, #409eff, #6366f1) !important;
+  border: none !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.35);
+  transition: all 0.3s ease;
+}
+.edit-profile-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(64, 158, 255, 0.45) !important;
+}
+/* Editable field visual distinction */
+.profile-form :deep(.el-input:not(.is-disabled) .el-input__wrapper) {
+  background: #f0f7ff;
+  box-shadow: 0 0 0 1px #93c5fd inset;
+  transition: all 0.25s;
+}
+.profile-form :deep(.el-input:not(.is-disabled) .el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px #409eff inset;
+}
+.profile-form :deep(.el-textarea:not(.is-disabled) .el-textarea__inner) {
+  background: #f0f7ff;
+  box-shadow: 0 0 0 1px #93c5fd inset;
+  transition: all 0.25s;
+}
+.profile-form :deep(.el-textarea:not(.is-disabled) .el-textarea__inner:hover) {
+  box-shadow: 0 0 0 1px #409eff inset;
 }
 @media (max-width: 768px) { .profile-body { padding: 16px; } }
 </style>
