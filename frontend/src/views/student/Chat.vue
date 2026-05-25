@@ -79,7 +79,9 @@ function truncate(str, len = 20) {
   return str.length > len ? str.slice(0, len) + '...' : str
 }
 
-function isSelf(senderId) {
+function isSelf(msg) {
+  if (!msg) return false
+  const senderId = msg.senderId ?? msg.sender_id
   return senderId === currentUserId || senderId === 0 || senderId === 'self'
 }
 
@@ -168,7 +170,7 @@ function backToContacts() {
 function markCurrentAsRead() {
   if (!activeContactId.value || !socket) return
   const unreadIds = messages.value
-    .filter((m) => !isSelf(m.senderId) && !m.read)
+    .filter((m) => !isSelf(m) && !m.read)
     .map((m) => m.id)
   if (unreadIds.length) {
     socket.emit('chat:read', { messageIds: unreadIds })
@@ -355,7 +357,7 @@ onMounted(async () => {
 
   // Incoming message
   socket.on('chat:message', (msg) => {
-    const isFromSelf = msg.senderId === currentUserId
+    const isFromSelf = isSelf(msg)
     const contactId = isFromSelf ? msg.receiverId : msg.senderId
 
     if (isFromSelf) {
@@ -497,7 +499,7 @@ onUnmounted(() => {
             v-for="msg in messages"
             :key="msg.id"
             class="message-item"
-            :class="{ self: isSelf(msg.senderId) }"
+            :class="{ self: isSelf(msg) }"
           >
             <div class="message-bubble">
               <template v-if="msg.sending">

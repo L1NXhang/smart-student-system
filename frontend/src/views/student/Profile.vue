@@ -21,20 +21,23 @@
       >
         <!-- 照片区域 -->
         <div class="photo-section">
-          <div class="photo-wrapper">
-            <el-avatar :size="120" :src="form.photo" shape="square" class="id-photo">
-              <el-icon :size="40"><UserFilled /></el-icon>
-            </el-avatar>
+          <div class="photo-wrapper" @click="triggerPhotoUpload">
+            <div class="photo-container">
+              <el-avatar :size="120" :src="form.photo" shape="square" class="id-photo">
+                <el-icon :size="40"><UserFilled /></el-icon>
+              </el-avatar>
+              <div class="photo-overlay">
+                <el-icon :size="28"><Plus /></el-icon>
+              </div>
+            </div>
             <el-upload
-              v-if="editing"
+              ref="photoUploadRef"
               :show-file-list="false"
               :before-upload="handlePhotoUpload"
               accept="image/jpeg,image/png"
-              class="photo-upload"
-            >
-              <el-button type="primary" plain size="small">更换照片</el-button>
-            </el-upload>
-            <span class="photo-hint">证件照（一寸/二寸）</span>
+              class="photo-upload-hidden"
+            />
+            <span class="photo-hint">点击更换证件照</span>
           </div>
         </div>
 
@@ -93,6 +96,7 @@
           <el-col :xs="24" :sm="12">
             <el-form-item label="年级">
               <el-input v-model="form.grade" :disabled="!editing" />
+              <el-tag v-if="!editing && form.grade" size="small" type="warning" class="review-badge">修改需审核</el-tag>
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12">
@@ -315,9 +319,11 @@ import {
 } from '@/api/student'
 
 const formRef = ref(null)
+const photoUploadRef = ref(null)
 const loading = ref(true)
 const editing = ref(false)
 const submitting = ref(false)
+const photoUploading = ref(false)
 
 const originalForm = ref({})
 
@@ -359,7 +365,7 @@ const showDifficultyForm = ref(false)
 const diffSubmitting = ref(false)
 const diffForm = reactive({ level: '', reason: '', files: [] })
 
-const reviewFields = ['phone', 'email', 'idCard', 'college', 'major', 'className', 'classTeacher', 'classTeacherPhone']
+const reviewFields = ['phone', 'email', 'idCard', 'college', 'major', 'grade', 'className', 'classTeacher', 'classTeacherPhone']
 
 function difficultyTag(level) {
   const map = { '一般困难': 'warning', '比较困难': 'warning', '特别困难': 'danger' }
@@ -393,8 +399,8 @@ async function fetchInfo() {
       classTeacherPhone: data.classTeacherPhone || data.class_teacher_phone || '',
       difficultyLevel: data.difficultyLevel || data.difficulty_level || '',
       difficultyMaterial: data.difficultyMaterial || data.difficulty_material || '',
-      familyMembers: (data.familyInfo || []).map(m => ({ ...m })),
-      emergencyContacts: (data.emergencyContacts || []).map(c => ({ ...c })),
+      familyMembers: (data.familyInfo || data.family_info || []).map(m => ({ ...m })),
+      emergencyContacts: (data.emergencyContacts || data.emergency_contacts || []).map(c => ({ ...c })),
     })
     originalForm.value = { ...form, familyMembers: form.familyMembers.map(m => ({ ...m })), emergencyContacts: form.emergencyContacts.map(c => ({ ...c })) }
   } catch {
@@ -432,19 +438,27 @@ function removeEmergContact(i) {
   form.emergencyContacts.splice(i, 1)
 }
 
+function triggerPhotoUpload() {
+  const el = photoUploadRef.value?.$el?.querySelector('input[type="file"]')
+  if (el) el.click()
+}
+
 async function handlePhotoUpload(file) {
   if (file.size > 2 * 1024 * 1024) {
     ElMessage.warning('照片大小不能超过 2MB')
     return false
   }
+  photoUploading.value = true
   const fd = new FormData()
   fd.append('photo', file)
   try {
     const res = await uploadPhoto(fd)
-    form.photo = res.data?.photo || ''
+    form.photo = (res.data?.photo || '') + '?t=' + Date.now()
     ElMessage.success('照片上传成功')
   } catch {
     /* handled by interceptor */
+  } finally {
+    photoUploading.value = false
   }
   return false
 }
@@ -504,7 +518,7 @@ async function submitAll() {
 function getFieldLabel(key) {
   const map = {
     phone: '联系方式', email: '邮箱', idCard: '身份证号', college: '学院', major: '专业',
-    className: '班级', campus: '校区', dormitory: '宿舍号',
+    grade: '年级', className: '班级', campus: '校区', dormitory: '宿舍号',
     classTeacher: '班主任', classTeacherPhone: '班主任联系方式',
   }
   return map[key] || key
@@ -564,9 +578,19 @@ onMounted(() => {
 .profile-form { max-width: 900px; }
 .photo-section { display: flex; justify-content: center; margin-bottom: 8px; }
 .photo-wrapper { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.photo-container { position: relative; cursor: pointer; border-radius: 4px; overflow: hidden; }
+.photo-container:hover .photo-overlay { opacity: 1; }
 .id-photo { border: 2px solid var(--el-border-color); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+.photo-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.25s;
+  border-radius: 4px;
+}
+.photo-overlay .el-icon { color: #fff; }
+.photo-upload-hidden { display: none; }
 .photo-hint { font-size: 12px; color: var(--el-text-color-secondary); }
-.photo-upload { margin-top: 4px; }
 .section-title {
   font-size: 16px; font-weight: 600; color: var(--el-color-primary);
   margin: 0 0 12px 0; padding-left: 10px; border-left: 3px solid var(--el-color-primary);

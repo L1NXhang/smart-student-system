@@ -74,6 +74,22 @@
                 </div>
               </el-form-item>
 
+              <el-form-item v-else-if="item.type === 'select'" :prop="item.prop">
+                <el-select
+                  v-model="form[item.prop]"
+                  :placeholder="item.placeholder"
+                  size="large"
+                  style="width:100%"
+                >
+                  <el-option
+                    v-for="opt in item.options"
+                    :key="opt.value"
+                    :label="opt.label"
+                    :value="opt.value"
+                  />
+                </el-select>
+              </el-form-item>
+
               <el-form-item v-else-if="item.type === 'button'">
                 <el-button
                   ref="registerBtnRef"
@@ -120,8 +136,39 @@ const form = reactive({
   name: '',
   username: '',
   phone: '',
+  college: '',
+  major: '',
+  grade: '',
   password: '',
   confirmPassword: '',
+})
+
+const collegeOptions = [
+  { label: '计算机学院', value: '计算机学院' },
+  { label: '数学与信息学院', value: '数学与信息学院' },
+  { label: '电子信息工程学院', value: '电子信息工程学院' },
+  { label: '物理与天文学院', value: '物理与天文学院' },
+  { label: '化学化工学院', value: '化学化工学院' },
+  { label: '生命科学学院', value: '生命科学学院' },
+  { label: '文学院', value: '文学院' },
+  { label: '历史文化学院', value: '历史文化学院' },
+  { label: '外国语学院', value: '外国语学院' },
+  { label: '政治与行政学院', value: '政治与行政学院' },
+  { label: '商学院', value: '商学院' },
+  { label: '教育学院', value: '教育学院' },
+  { label: '法学院', value: '法学院' },
+  { label: '新闻传播学院', value: '新闻传播学院' },
+  { label: '音乐学院', value: '音乐学院' },
+  { label: '美术学院', value: '美术学院' },
+  { label: '体育学院', value: '体育学院' },
+  { label: '地理科学学院', value: '地理科学学院' },
+  { label: '环境科学与工程学院', value: '环境科学与工程学院' },
+]
+
+const currentYear = new Date().getFullYear()
+const gradeOptions = Array.from({ length: 6 }, (_, i) => {
+  const y = currentYear - i
+  return { label: `${y}级`, value: `${y}级` }
 })
 
 // ---- Password strength validation ----
@@ -157,6 +204,9 @@ const rules = {
   name:            [{ required: true, message: '请输入姓名', trigger: 'blur' }],
   username:        [{ required: true, message: '请输入学号', trigger: 'blur' }],
   phone:           [{ required: true, message: '请输入联系方式', trigger: 'blur' }],
+  college:         [{ required: true, message: '请选择学院', trigger: 'change' }],
+  major:           [{ required: true, message: '请输入专业', trigger: 'blur' }],
+  grade:           [{ required: true, message: '请选择年级', trigger: 'change' }],
   password:        [{ required: true, validator: validatePassword, trigger: 'blur' }],
   confirmPassword: [{ required: true, validator: validateConfirmPassword, trigger: 'blur' }],
 }
@@ -165,6 +215,9 @@ const formItems = [
   { type: 'input',    prop: 'name',     placeholder: '姓名',   icon: h(User) },
   { type: 'input',    prop: 'username', placeholder: '学号',   icon: h(User) },
   { type: 'input',    prop: 'phone',    placeholder: '联系方式', icon: h(Phone) },
+  { type: 'select',   prop: 'college',  placeholder: '请选择学院', options: collegeOptions },
+  { type: 'input',    prop: 'major',    placeholder: '专业（如：计算机科学与技术）', icon: h(User) },
+  { type: 'select',   prop: 'grade',    placeholder: '请选择年级', options: gradeOptions },
   { type: 'password', prop: 'password', placeholder: '密码',   icon: h(Lock) },
   { type: 'password', prop: 'confirmPassword', placeholder: '确认密码', icon: h(Lock) },
   { type: 'button',   prop: 'submit' },
@@ -221,6 +274,9 @@ async function handleRegister() {
       password: form.password,
       name: form.name,
       phone: form.phone,
+      college: form.college,
+      major: form.major,
+      grade: form.grade,
     })
     ElMessage.success('注册成功，请登录')
     router.push('/login')
@@ -254,8 +310,8 @@ onMounted(() => {
 
 .auth-card {
   display: flex;
-  width: 820px;
-  min-height: 580px;
+  width: 880px;
+  min-height: 680px;
   background: #fff;
   border-radius: 20px;
   box-shadow: 0 20px 60px rgba(64, 128, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.04);
@@ -392,6 +448,20 @@ onMounted(() => {
 
 .auth-form :deep(.el-input__wrapper.is-focus) {
   box-shadow: 0 0 0 2px #3b82f6 inset;
+}
+
+.auth-form :deep(.el-select) {
+  width: 100%;
+}
+
+.auth-form :deep(.el-select .el-input__wrapper) {
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px #e5e7eb inset;
+  transition: box-shadow 0.25s;
+}
+
+.auth-form :deep(.el-select .el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px #93c5fd inset;
 }
 
 /* ---- Password Strength ---- */

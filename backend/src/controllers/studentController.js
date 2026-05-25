@@ -53,7 +53,7 @@ const getStudentInfo = async (req, res) => {
 // 更新学生信息（学生自己修改部分字段）
 const updateStudentInfo = async (req, res) => {
   try {
-    const { phone, email, hobbies, personality, careerGoal } = req.body;
+    const { phone, email, hobbies, personality, careerGoal, grade, campus, dormitory, offCampusAddress, medicalHistory } = req.body;
 
     const cached = await getCachedStudentInfo(req);
     if (!cached) {
@@ -67,6 +67,11 @@ const updateStudentInfo = async (req, res) => {
     if (hobbies !== undefined) updates.hobbies = hobbies;
     if (personality !== undefined) updates.personality = personality;
     if (careerGoal !== undefined) updates.careerGoal = careerGoal;
+    if (grade !== undefined) updates.grade = grade;
+    if (campus !== undefined) updates.campus = campus;
+    if (dormitory !== undefined) updates.dormitory = dormitory;
+    if (offCampusAddress !== undefined) updates.offCampusAddress = offCampusAddress;
+    if (medicalHistory !== undefined) updates.medicalHistory = medicalHistory;
 
     await studentInfo.update(updates);
 

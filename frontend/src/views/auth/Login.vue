@@ -232,8 +232,8 @@ const sliderLeft = ref(0)
 const captchaProgress = ref(0)
 let isDragging = false
 let trackWidth = 300
-const sliderWidth = 40
 let maxLeft = 200
+let sliderWidth = 40
 
 const form = reactive({ username: '', password: '', remember: false })
 
@@ -250,6 +250,7 @@ function onDragStart(e) {
   if (captchaPassed.value) return
   isDragging = true
   trackWidth = trackRef.value.clientWidth
+  sliderWidth = sliderRef.value ? sliderRef.value.clientWidth : 42
   maxLeft = trackWidth - sliderWidth
   const clientX = e.touches ? e.touches[0].clientX : e.clientX
   const rect = trackRef.value.getBoundingClientRect()

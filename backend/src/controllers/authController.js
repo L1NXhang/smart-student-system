@@ -15,7 +15,7 @@ const generateToken = (user) => {
 // 用户注册
 const register = async (req, res) => {
   try {
-    const { username, password, name, role = 'student' } = req.body;
+    const { username, password, name, phone, college, major, grade, role = 'student' } = req.body;
 
     // 检查用户名是否已存在
     const existingUser = await User.findOne({ where: { username } });
@@ -39,8 +39,11 @@ const register = async (req, res) => {
     if (role === 'student') {
       await StudentInfo.create({
         userId: user.id,
+        phone: phone || '',
+        college: college || '',
+        major: major || '',
+        grade: grade || '',
         className: '',
-        grade: ''
       });
     }
 
