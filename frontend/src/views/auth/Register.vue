@@ -145,24 +145,13 @@ const form = reactive({
 
 const collegeOptions = [
   { label: '计算机学院', value: '计算机学院' },
-  { label: '数学与信息学院', value: '数学与信息学院' },
   { label: '电子信息工程学院', value: '电子信息工程学院' },
-  { label: '物理与天文学院', value: '物理与天文学院' },
-  { label: '化学化工学院', value: '化学化工学院' },
-  { label: '生命科学学院', value: '生命科学学院' },
-  { label: '文学院', value: '文学院' },
-  { label: '历史文化学院', value: '历史文化学院' },
   { label: '外国语学院', value: '外国语学院' },
-  { label: '政治与行政学院', value: '政治与行政学院' },
+  { label: '数学与信息学院', value: '数学与信息学院' },
+  { label: '物理与天文学院', value: '物理与天文学院' },
+  { label: '文学院', value: '文学院' },
   { label: '商学院', value: '商学院' },
-  { label: '教育学院', value: '教育学院' },
-  { label: '法学院', value: '法学院' },
-  { label: '新闻传播学院', value: '新闻传播学院' },
-  { label: '音乐学院', value: '音乐学院' },
-  { label: '美术学院', value: '美术学院' },
-  { label: '体育学院', value: '体育学院' },
-  { label: '地理科学学院', value: '地理科学学院' },
-  { label: '环境科学与工程学院', value: '环境科学与工程学院' },
+  { label: '政治与行政学院', value: '政治与行政学院' },
 ]
 
 const currentYear = new Date().getFullYear()

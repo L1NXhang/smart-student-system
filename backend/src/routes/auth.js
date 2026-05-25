@@ -8,7 +8,10 @@ const { authMiddleware } = require('../middlewares/auth');
 router.post('/register', [
   body('username').notEmpty().withMessage('用户名不能为空'),
   body('password').isLength({ min: 6 }).withMessage('密码至少6位'),
-  body('name').notEmpty().withMessage('姓名不能为空')
+  body('name').notEmpty().withMessage('姓名不能为空'),
+  body('college').notEmpty().withMessage('学院不能为空'),
+  body('major').notEmpty().withMessage('专业不能为空'),
+  body('grade').notEmpty().withMessage('年级不能为空'),
 ], authController.register);
 
 // 登录
