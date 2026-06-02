@@ -9,22 +9,28 @@ const { makeUploader } = require('../middlewares/upload');
 const { sequelize } = require('../models');
 const { success, error } = require('../utils/response');
 
-// Admin dashboard stats
+// Admin dashboard stats(单条聚合查询,替代 8 条串行 COUNT)
 router.get('/dashboard/stats', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const [[{ totalStudents }]] = await sequelize.query("SELECT COUNT(*) as totalStudents FROM users WHERE role='student'");
-    const [[{ pendingScholarship }]] = await sequelize.query("SELECT COUNT(*) as pendingScholarship FROM scholarship_applications WHERE status='pending'");
-    const [[{ pendingInfoChange }]] = await sequelize.query("SELECT COUNT(*) as pendingInfoChange FROM info_change_requests WHERE status='pending'");
-    const [[{ pendingDifficulty }]] = await sequelize.query("SELECT COUNT(*) as pendingDifficulty FROM difficulty_applications WHERE status='pending'");
-    const [[{ unhandledFeedback }]] = await sequelize.query("SELECT COUNT(*) as unhandledFeedback FROM feedbacks WHERE reply IS NULL");
-    const [[{ pendingLateReturn }]] = await sequelize.query("SELECT COUNT(*) as pendingLateReturn FROM late_return_records WHERE status='pending'");
-    const [[{ pendingLeave }]] = await sequelize.query("SELECT COUNT(*) as pendingLeave FROM leave_records WHERE status='pending'");
-    const [[{ totalEvents }]] = await sequelize.query("SELECT COUNT(*) as totalEvents FROM events WHERE status=1");
-    return success(res, {
-      totalStudents, pendingScholarship, pendingInfoChange, pendingDifficulty,
-      unhandledFeedback, pendingLateReturn, pendingLeave, totalEvents,
-      totalPending: pendingScholarship + pendingInfoChange + pendingDifficulty + pendingLateReturn + pendingLeave,
-    });
+    const [rows] = await sequelize.query(`
+      SELECT
+        (SELECT COUNT(*) FROM users WHERE role = 'student') AS totalStudents,
+        (SELECT COUNT(*) FROM scholarship_applications WHERE status = 'pending') AS pendingScholarship,
+        (SELECT COUNT(*) FROM info_change_requests WHERE status = 'pending') AS pendingInfoChange,
+        (SELECT COUNT(*) FROM difficulty_applications WHERE status = 'pending') AS pendingDifficulty,
+        (SELECT COUNT(*) FROM feedbacks WHERE reply IS NULL) AS unhandledFeedback,
+        (SELECT COUNT(*) FROM late_return_records WHERE status = 'pending') AS pendingLateReturn,
+        (SELECT COUNT(*) FROM leave_records WHERE status = 'pending') AS pendingLeave,
+        (SELECT COUNT(*) FROM events WHERE status = 1) AS totalEvents
+    `);
+    const r = rows[0] || {};
+    const totalPending =
+      Number(r.pendingScholarship || 0) +
+      Number(r.pendingInfoChange || 0) +
+      Number(r.pendingDifficulty || 0) +
+      Number(r.pendingLateReturn || 0) +
+      Number(r.pendingLeave || 0);
+    return success(res, { ...r, totalPending });
   } catch (e) { return error(res, e.message, 500); }
 });
 
