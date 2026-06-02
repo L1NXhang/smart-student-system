@@ -3,6 +3,7 @@ const http = require('http')
 const cors = require('cors')
 const morgan = require('morgan')
 const path = require('path')
+const helmet = require('helmet')
 const { Server } = require('socket.io')
 const jwt = require('jsonwebtoken')
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') })
@@ -26,9 +27,30 @@ const app = express()
 const server = http.createServer(app)
 const PORT = process.env.PORT || 3000
 
+// 允许的跨域来源白名单(逗号分隔,见 .env 中的 CLIENT_ORIGIN)
+const ALLOWED_ORIGINS = (process.env.CLIENT_ORIGIN || 'http://localhost:5173,http://localhost:8080,http://124.223.0.187')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean)
+
+const corsOptions = {
+  origin(origin, cb) {
+    // 同源请求(无 Origin 头)与白名单内的请求放行;其余拒绝
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true)
+    return cb(new Error('CORS: origin not allowed: ' + origin))
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  maxAge: 86400,
+}
+
 // Socket.io
 const io = new Server(server, {
-  cors: { origin: '*', methods: ['GET', 'POST'] },
+  cors: {
+    origin: ALLOWED_ORIGINS,
+    methods: ['GET', 'POST'],
+  },
 })
 
 const onlineUsers = new Map() // userId -> Set<socketId>
@@ -132,11 +154,28 @@ io.on('connection', (socket) => {
 app.set('io', io)
 
 // 中间件
-app.use(cors())
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // 纯 API 服务,不需要 CSP
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+)
+app.use(cors(corsOptions))
 app.use(morgan('dev'))
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
+app.use(express.json({ limit: '1mb' }))
+app.use(express.urlencoded({ extended: true, limit: '1mb' }))
+// 静态资源:禁用目录浏览 + 强制下载 + 防止 MIME 嗅探
+app.use(
+  '/uploads',
+  express.static(path.join(__dirname, '../uploads'), {
+    dotfiles: 'deny',
+    index: false,
+    setHeaders(res) {
+      res.setHeader('X-Content-Type-Options', 'nosniff')
+      res.setHeader('Content-Disposition', 'attachment')
+    },
+  })
+)
 
 // 强制设置 API 响应字符集为 UTF-8，防止 Nginx 等代理层剥离 charset
 app.use('/api', (req, res, next) => {
@@ -181,7 +220,10 @@ app.use((req, res) => {
 
 app.use((err, req, res, next) => {
   console.error('服务器错误:', err)
-  error(res, err.message || '服务器内部错误', 500)
+  // 不把内部 err.message 原样吐给客户端,只透出通用文案
+  const status = err.status || (err.message && err.message.startsWith('CORS') ? 403 : 500)
+  const message = status === 500 ? '服务器内部错误' : err.message
+  error(res, message, status)
 })
 
 const startServer = async () => {
