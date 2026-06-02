@@ -135,7 +135,11 @@ io.on('connection', (socket) => {
 
   socket.on('chat:read', async (data) => {
     if (data.messageIds && data.messageIds.length) {
-      await ChatMessage.update({ is_read: 1, read_at: new Date() }, { where: { id: data.messageIds } })
+      // 只能把"自己作为接收方"的消息标为已读;否则静默忽略
+      await ChatMessage.update(
+        { is_read: 1, read_at: new Date() },
+        { where: { id: data.messageIds, receiver_id: userId } }
+      )
     }
   })
 
