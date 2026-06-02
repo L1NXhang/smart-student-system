@@ -138,6 +138,12 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 
+// 强制设置 API 响应字符集为 UTF-8，防止 Nginx 等代理层剥离 charset
+app.use('/api', (req, res, next) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8')
+  next()
+})
+
 // 路由
 app.use('/api/auth', authRoutes)
 app.use('/api/student', studentRoutes)

@@ -47,7 +47,7 @@
                 type="primary"
                 size="large"
                 :loading="loading"
-                :disabled="loading || !captchaPassed"
+                :disabled="loading || (!captchaPassed && !testMode)"
                 class="login-btn"
                 @click="handleLogin"
               >
@@ -57,8 +57,13 @@
             </el-form-item>
           </el-form>
 
+          <!-- 测试模式 -->
+          <div class="test-mode-section">
+            <el-checkbox v-model="testMode" size="small">测试模式（跳过验证码）</el-checkbox>
+          </div>
+
           <!-- 滑块验证 -->
-          <div class="captcha-section" ref="captchaRef">
+          <div class="captcha-section" ref="captchaRef" v-show="!testMode">
             <div class="captcha-track" ref="trackRef" @mousedown="onDragStart" @touchstart.prevent="onDragStart">
               <div class="captcha-track-bg" :style="{ width: captchaProgress + '%' }" />
               <div
@@ -150,7 +155,7 @@
                 type="primary"
                 size="large"
                 :loading="loading"
-                :disabled="loading || !captchaPassed"
+                :disabled="loading || (!captchaPassed && !testMode)"
                 class="login-btn"
                 @click="handleLogin"
               >
@@ -160,8 +165,13 @@
             </el-form-item>
           </el-form>
 
+          <!-- 测试模式 -->
+          <div class="test-mode-section">
+            <el-checkbox v-model="testMode" size="small">测试模式（跳过验证码）</el-checkbox>
+          </div>
+
           <!-- 滑块验证 -->
-          <div class="captcha-section" ref="captchaRef">
+          <div class="captcha-section" ref="captchaRef" v-show="!testMode">
             <p class="captcha-label">安全验证</p>
             <div class="captcha-track" ref="trackRef" @mousedown="onDragStart" @touchstart.prevent="onDragStart">
               <div class="captcha-track-bg" :style="{ width: captchaProgress + '%' }" />
@@ -225,6 +235,9 @@ const passItemRef = ref(null)
 const captchaRef = ref(null)
 const trackRef = ref(null)
 const sliderRef = ref(null)
+const isTestMode = import.meta.env.VITE_TEST_MODE === '1'
+const testMode = ref(isTestMode)
+
 const loading = ref(false)
 
 const captchaPassed = ref(false)
@@ -294,7 +307,7 @@ function onDragEnd() {
 }
 
 async function handleLogin() {
-  if (!captchaPassed.value) { ElMessage.warning('请先完成安全验证'); return }
+  if (!captchaPassed.value && !testMode.value) { ElMessage.warning('请先完成安全验证'); return }
   if (!formRef.value) return
   try { await formRef.value.validate() } catch { return }
   loading.value = true
@@ -321,7 +334,24 @@ watch(captchaPassed, (val) => {
   }
 })
 
+watch(testMode, (checked) => {
+  if (checked) {
+    captchaPassed.value = true
+    captchaProgress.value = 100
+    sliderLeft.value = maxLeft
+  } else {
+    captchaPassed.value = false
+    captchaProgress.value = 0
+    sliderLeft.value = 0
+  }
+})
+
 onMounted(() => {
+  if (testMode.value) {
+    captchaPassed.value = true
+    captchaProgress.value = 100
+  }
+
   isMobile.value = window.innerWidth < 768
 
   if (isMobile.value) {

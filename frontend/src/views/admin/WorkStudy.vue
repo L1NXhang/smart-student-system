@@ -164,7 +164,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import gsap from 'gsap'
 import {
@@ -178,8 +178,6 @@ const total = ref(0)
 const loading = ref(false)
 
 const positions = ref([])
-
-const statusMap = { 1: 'open', 0: 'closed' }
 
 function mapPosition(p) {
   return {

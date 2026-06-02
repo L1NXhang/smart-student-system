@@ -189,10 +189,10 @@ async function submit() {
   submitting.value = true
   try {
     await submitLeave({
-      leaveDate: form.value.leaveDate,
-      destination: form.value.destination,
-      reason: form.value.reason,
-      expectedReturn: form.value.expectedReturn,
+      leaveDate: form.leaveDate,
+      destination: form.destination,
+      reason: form.reason,
+      expectedReturn: form.expectedReturn,
     })
     ElMessage.success('外出报备已提交')
     resetForm()

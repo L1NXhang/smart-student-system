@@ -83,11 +83,6 @@ const pageRef = ref(null)
 const formRef = ref(null)
 const loading = ref(false)
 
-const typeMap = {
-  '班级': 'class',
-  '年级': 'grade',
-  '全校': 'all',
-}
 const typeOptions = [
   { label: '班级通知', value: 'class' },
   { label: '年级通知', value: 'grade' },

@@ -233,6 +233,8 @@ const sliderRef = ref(null)
 const loading = ref(false)
 const currentStep = ref(0)
 
+const isTestMode = import.meta.env.VITE_TEST_MODE === '1'
+
 // ─── Captcha state ───
 const captchaPassed = ref(false)
 const sliderLeft = ref(0)
@@ -443,6 +445,12 @@ function shakeInput() {
 }
 
 onMounted(() => {
+  // 测试模式：自动通过滑块验证码
+  if (isTestMode) {
+    captchaPassed.value = true
+    captchaProgress.value = 100
+  }
+
   const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
   tl.fromTo(cardRef.value, { y: 40, opacity: 0, scale: 0.96 },
     { y: 0, opacity: 1, scale: 1, duration: 0.7 })

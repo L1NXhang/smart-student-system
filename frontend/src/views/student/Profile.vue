@@ -261,18 +261,19 @@
           </el-col>
         </el-row>
 
-        <!-- 操作按钮 -->
-        <div class="form-actions" v-if="!editing">
-          <el-button type="primary" size="large" :icon="Edit" class="edit-profile-btn" @click="startEdit">编辑资料</el-button>
-          <el-button size="large" @click="handleExport">导出个人信息</el-button>
-        </div>
-        <div class="form-actions" v-else>
-          <el-button size="large" @click="cancelEdit">取消</el-button>
-          <el-button type="primary" size="large" @click="submitAll" :loading="submitting">
-            提交修改
-          </el-button>
-        </div>
       </el-form>
+
+      <!-- 操作按钮 (放在 form 外部，避免被 disabled 状态影响) -->
+      <div class="form-actions" v-if="!editing">
+        <el-button type="primary" size="large" :icon="Edit" class="edit-profile-btn" @click="startEdit">编辑资料</el-button>
+        <el-button size="large" @click="handleExport">导出个人信息</el-button>
+      </div>
+      <div class="form-actions" v-else>
+        <el-button size="large" @click="cancelEdit">取消</el-button>
+        <el-button type="primary" size="large" @click="submitAll" :loading="submitting">
+          提交修改
+        </el-button>
+      </div>
     </div>
 
     <!-- 困难认定弹窗 -->

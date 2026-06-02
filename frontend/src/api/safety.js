@@ -76,6 +76,10 @@ export function createExam(data) {
   return api.post('/safety/admin/exams', data)
 }
 
+export function updateExam(id, data) {
+  return api.put(`/safety/admin/exams/${id}`, data)
+}
+
 export function deleteExam(id) {
   return api.delete(`/safety/admin/exams/${id}`)
 }

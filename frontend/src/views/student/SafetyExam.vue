@@ -27,6 +27,7 @@
               v-if="examStatus[row.id] !== 'passed'"
               type="primary"
               size="small"
+              :loading="startingExam"
               @click="startExam(row)"
             >
               {{ examStatus[row.id] === 'failed' ? '重新考试' : '开始考试' }}
@@ -134,6 +135,7 @@ const answers = ref({})
 const submitting = ref(false)
 const timeLeft = ref(0)
 const result = ref({})
+const startingExam = ref(false)
 let timer = null
 
 const answeredCount = computed(() => Object.keys(answers.value).length)
@@ -179,6 +181,7 @@ async function startExam(exam) {
       return
     }
 
+    startingExam.value = true
     const res = await getExamQuestions(exam.id)
     if (!res.data || !res.data.length) {
       ElMessage.warning('该考试暂无题目')
@@ -202,6 +205,8 @@ async function startExam(exam) {
     }, 1000)
   } catch {
     ElMessage.error('获取考试题目失败')
+  } finally {
+    startingExam.value = false
   }
 }
 
@@ -236,13 +241,15 @@ async function submitExam() {
     result.value = res.data
     if (res.data.isPassed) {
       examStatus.value[currentExam.value.id] = 'passed'
+      ElMessage.success(`考试通过！得分 ${res.data.score} 分`)
     } else {
       examStatus.value[currentExam.value.id] = 'failed'
+      ElMessage.warning(`未通过，得分 ${res.data.score} 分，可重新考试`)
     }
     taking.value = false
     showResult.value = true
   } catch {
-    /* handled by interceptor */
+    ElMessage.error('提交考试失败，请重试')
   } finally {
     submitting.value = false
   }

@@ -69,20 +69,42 @@
         </el-card>
       </el-col>
     </el-row>
+
+    <!-- Charts Row -->
+    <el-row :gutter="20" style="margin-top:20px">
+      <el-col :xs="24" :lg="14">
+        <el-card shadow="never" class="content-card">
+          <template #header><span class="card-title">待审核事项分布</span></template>
+          <div ref="pendingChartRef" style="height:320px"></div>
+          <el-empty v-if="!stats.totalPending" description="暂无数据" :image-size="60" />
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :lg="10">
+        <el-card shadow="never" class="content-card">
+          <template #header><span class="card-title">统计概览</span></template>
+          <div ref="overviewChartRef" style="height:320px"></div>
+        </el-card>
+      </el-col>
+    </el-row>
     </FadeContent>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { getDashboardStats } from '@/api/admin'
 import gsap from 'gsap'
-import { GridMotionBackground } from '@/components/react-bits'
+import * as echarts from 'echarts'
+import { FadeContent, GridMotionBackground } from '@/components/react-bits'
 
 const router = useRouter()
 const dashboardRef = ref(null)
 const statRefs = ref([])
+const pendingChartRef = ref(null)
+const overviewChartRef = ref(null)
+let pendingChart = null
+let overviewChart = null
 
 const stats = reactive({
   totalStudents: 0, pendingScholarship: 0, pendingInfoChange: 0,
@@ -129,9 +151,71 @@ onMounted(async () => {
     gsap.from(statRefs.value, { y: 40, autoAlpha: 0, duration: 0.6, stagger: 0.12, ease: 'power3.out' })
     gsap.from('.content-card', { y: 30, autoAlpha: 0, duration: 0.5, stagger: 0.15, ease: 'power2.out', delay: 0.5 })
   }, dashboardRef.value)
+  await nextTick()
+  renderCharts()
 })
 
-onUnmounted(() => ctx?.revert())
+onUnmounted(() => {
+  ctx?.revert()
+  pendingChart?.dispose()
+  overviewChart?.dispose()
+})
+
+function renderCharts() {
+  renderPendingChart()
+  renderOverviewChart()
+}
+
+function renderPendingChart() {
+  if (!pendingChartRef.value) return
+  pendingChart = echarts.init(pendingChartRef.value)
+  const items = pendingCards.value.filter((c) => c.count > 0)
+  if (!items.length) return
+  pendingChart.setOption({
+    tooltip: { trigger: 'axis' },
+    xAxis: {
+      type: 'category',
+      data: items.map((c) => c.label),
+      axisLabel: { fontSize: 12 },
+    },
+    yAxis: { type: 'value', minInterval: 1 },
+    series: [{
+      type: 'bar',
+      data: items.map((c) => c.count),
+      itemStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: '#409EFF' },
+          { offset: 1, color: '#79bbff' },
+        ]),
+        borderRadius: [6, 6, 0, 0],
+      },
+      barWidth: '50%',
+    }],
+    grid: { left: 40, right: 20, top: 20, bottom: 30 },
+  })
+}
+
+function renderOverviewChart() {
+  if (!overviewChartRef.value) return
+  overviewChart = echarts.init(overviewChartRef.value)
+  const data = [
+    { name: '学生总数', value: stats.totalStudents, color: '#409EFF' },
+    { name: '待审核', value: stats.totalPending, color: '#E6A23C' },
+    { name: '未处理反馈', value: stats.unhandledFeedback, color: '#F56C6C' },
+    { name: '今日晚归/外出', value: stats.pendingLateReturn + stats.pendingLeave, color: '#67C23A' },
+  ].filter((d) => d.value > 0)
+  if (!data.length) return
+  overviewChart.setOption({
+    tooltip: { trigger: 'item' },
+    series: [{
+      type: 'pie',
+      radius: ['50%', '80%'],
+      center: ['50%', '55%'],
+      data: data.map((d) => ({ ...d, itemStyle: { color: d.color } })),
+      label: { fontSize: 12 },
+    }],
+  })
+}
 
 function onCardHover(el, entering) {
   gsap.to(el, {

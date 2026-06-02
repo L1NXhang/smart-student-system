@@ -39,7 +39,7 @@
         </div>
       </el-upload>
       <div class="import-actions">
-        <el-button type="success" :disabled="!selectedFile" @click="handleImport">
+        <el-button type="success" :disabled="!selectedFile" :loading="importing" @click="handleImport">
           开始导入
         </el-button>
       </div>
@@ -57,11 +57,12 @@
               clearable
               style="width: 240px"
               :prefix-icon="Search"
+              @input="onSearchDebounced"
             />
           </div>
         </div>
       </template>
-      <el-table :data="filteredGrades" stripe border style="width: 100%">
+      <el-table :data="grades" stripe border style="width: 100%" v-loading="loading">
         <el-table-column prop="studentName" label="学生姓名" min-width="100" />
         <el-table-column prop="studentId" label="学号" min-width="130" />
         <el-table-column prop="semester" label="学期" min-width="150" />
@@ -70,49 +71,92 @@
         <el-table-column prop="credit" label="学分" width="70" align="center" />
         <el-table-column prop="gpa" label="绩点" width="70" align="center" />
       </el-table>
+      <div class="pagination-wrap">
+        <el-pagination
+          v-model:current-page="page"
+          :page-size="pageSize"
+          :total="total"
+          layout="total, prev, pager, next"
+          background
+          @current-change="loadGradesList"
+        />
+      </div>
     </el-card>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import gsap from 'gsap'
+import { getGradesList, importGrades } from '@/api/admin'
 
 const pageRef = ref(null)
 const uploadRef = ref(null)
 const selectedFile = ref(null)
 const searchKeyword = ref('')
+const loading = ref(false)
+const importing = ref(false)
+const page = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
 
 const importForm = reactive({
   semester: '2025-2026-2',
 })
 
-// --- Mock Data ---
-const grades = ref([
-  { studentName: '张三', studentId: '20221101001', semester: '2025-2026第二学期', courseName: '高等数学(下)', score: 92, credit: 5, gpa: 4.0 },
-  { studentName: '李四', studentId: '20221101002', semester: '2025-2026第二学期', courseName: '大学物理(二)', score: 85, credit: 4, gpa: 3.5 },
-  { studentName: '王五', studentId: '20221101003', semester: '2025-2026第二学期', courseName: '数据结构', score: 78, credit: 4, gpa: 3.0 },
-  { studentName: '赵六', studentId: '20221101004', semester: '2025-2026第二学期', courseName: '线性代数', score: 88, credit: 3, gpa: 3.7 },
-  { studentName: '孙七', studentId: '20221101005', semester: '2025-2026第二学期', courseName: '操作系统', score: 76, credit: 4, gpa: 2.8 },
-  { studentName: '周八', studentId: '20221101006', semester: '2025-2026第二学期', courseName: '计算机网络', score: 95, credit: 3, gpa: 4.0 },
-  { studentName: '吴九', studentId: '20221101007', semester: '2025-2026第二学期', courseName: '编译原理', score: 82, credit: 3, gpa: 3.3 },
-  { studentName: '郑十', studentId: '20221101008', semester: '2025-2026第二学期', courseName: '数据库原理', score: 90, credit: 4, gpa: 3.8 },
-  { studentName: '冯十一', studentId: '20221101009', semester: '2025-2026第二学期', courseName: '高等数学(下)', score: 71, credit: 5, gpa: 2.5 },
-  { studentName: '陈十二', studentId: '20221101010', semester: '2025-2026第二学期', courseName: '大学英语(四)', score: 87, credit: 2, gpa: 3.6 },
-])
+const grades = ref([])
 
-const filteredGrades = computed(() => {
-  if (!searchKeyword.value) return grades.value
-  const kw = searchKeyword.value.toLowerCase()
-  return grades.value.filter(
-    (g) => g.studentName.includes(kw) || g.studentId.includes(kw)
-  )
-})
+let searchTimer = null
+function onSearchDebounced() {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    page.value = 1
+    loadGradesList()
+  }, 350)
+}
+
+function mapGrade(g) {
+  return {
+    studentName: g.student_name || g.studentName || '',
+    studentId: g.student_username || g.studentId || '',
+    semester: g.semester || '',
+    courseName: g.course_name || g.courseName || '',
+    score: g.score ?? '',
+    credit: g.credit ?? '',
+    gpa: g.gpa ?? '',
+  }
+}
+
+async function loadGradesList() {
+  loading.value = true
+  try {
+    const params = { page: page.value, pageSize: pageSize.value }
+    if (searchKeyword.value) params.keyword = searchKeyword.value
+    if (importForm.semester) params.semester = importForm.semester
+    const res = await getGradesList(params)
+    grades.value = (res.data?.list || []).map(mapGrade)
+    total.value = res.data?.total || 0
+  } catch {
+    ElMessage.error('加载成绩列表失败')
+  } finally {
+    loading.value = false
+  }
+}
 
 function downloadTemplate() {
-  ElMessage.success('模板下载已开始（功能待接入后端）')
+  const header = ['学号', '学期', '课程名称', '课程类型', '学分', '成绩', '绩点']
+  const example = ['20221101001', '2025-2026-2', '高等数学(下)', 'required', '5', '92', '4.0']
+  const csvContent = '﻿' + header.join(',') + '\n' + example.join(',')
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = '成绩导入模板.csv'
+  a.click()
+  URL.revokeObjectURL(url)
+  ElMessage.success('模板下载成功')
 }
 
 function handleExceed() {
@@ -123,25 +167,41 @@ function handleFileChange(file) {
   selectedFile.value = file.raw
 }
 
-function handleImport() {
+async function handleImport() {
   if (!importForm.semester) {
     ElMessage.warning('请先选择学期')
     return
   }
-  ElMessageBox.confirm(
-    `确认将文件导入到 ${importForm.semester} 学期？`,
-    '确认导入',
-    { confirmButtonText: '确认', cancelButtonText: '取消', type: 'info' }
-  ).then(() => {
-    ElMessage.success('成绩导入成功（Mock）')
+  try {
+    await ElMessageBox.confirm(
+      `确认将文件导入到 ${importForm.semester} 学期？`,
+      '确认导入',
+      { confirmButtonText: '确认', cancelButtonText: '取消', type: 'info' }
+    )
+  } catch {
+    return
+  }
+  importing.value = true
+  try {
+    const fd = new FormData()
+    fd.append('file', selectedFile.value)
+    fd.append('semester', importForm.semester)
+    const res = await importGrades(fd)
+    const result = res.data || res
+    ElMessage.success(`导入完成：成功 ${result.successCount || 0} 条，失败 ${result.failCount || 0} 条`)
     selectedFile.value = null
     uploadRef.value?.clearFiles()
-  })
+    loadGradesList()
+  } catch (e) {
+    ElMessage.error(e.response?.data?.message || '导入失败')
+  } finally {
+    importing.value = false
+  }
 }
 
-// --- GSAP ---
 let ctx
 onMounted(() => {
+  loadGradesList()
   ctx = gsap.context(() => {
     gsap.from('.section-card', {
       y: 40,
@@ -220,5 +280,11 @@ onUnmounted(() => {
 
 .table-card {
   min-height: 400px;
+}
+
+.pagination-wrap {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
 }
 </style>

@@ -13,7 +13,6 @@ const sequelize = new Sequelize(
     collate: 'utf8mb4_unicode_ci',
     dialectOptions: {
       charset: 'utf8mb4',
-      collation: 'utf8mb4_unicode_ci',
     },
     define: {
       charset: 'utf8mb4',
@@ -23,9 +22,17 @@ const sequelize = new Sequelize(
     pool: {
       max: 20,
       min: 2,
-      acquire: 10000,
+      acquire: 30000,
       idle: 30000,
       evict: 60000,
+      afterCreate: (conn, done) => {
+        conn.query('SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci', (err) => {
+          if (err) {
+            console.error('设置数据库连接字符集失败:', err)
+          }
+          done(err, conn)
+        })
+      },
     }
   }
 );

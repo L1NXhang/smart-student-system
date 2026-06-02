@@ -42,6 +42,14 @@
     <div class="content-row">
       <div class="list-card">
         <div class="card-head">
+          <span>数据概览</span>
+        </div>
+        <div ref="statsChartRef" style="height:260px"></div>
+        <div v-if="!hasStatsData" class="empty-hint">暂无统计数据</div>
+      </div>
+
+      <div class="list-card">
+        <div class="card-head">
           <span>近期公告</span>
           <el-button text type="primary" size="small" @click="$router.push('/message/notice')">查看全部</el-button>
         </div>
@@ -51,7 +59,9 @@
           <div class="item-time">{{ formatDate(item.created_at) }}</div>
         </div>
       </div>
+    </div>
 
+    <div class="content-row" style="margin-top:16px">
       <div class="list-card">
         <div class="card-head">
           <span>近期活动</span>
@@ -76,11 +86,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { getAnnouncements, getEvents, getUnreadAnnounceCount } from '@/api/message'
 import { getScholarshipApplications } from '@/api/scholarship'
 import { Trophy, Bell, Clock, Calendar } from '@element-plus/icons-vue'
 import { ShinyText, BlurText, CountUp, Reveal, TiltCard } from '@/components/react-bits'
+import * as echarts from 'echarts'
 
 const announcements = ref([])
 const events = ref([])
@@ -88,6 +99,13 @@ const loading = ref(true)
 const loadError = ref(false)
 
 const scholarshipCount = ref(0), unreadCount = ref(0), pendingCount = ref(0), eventCount = ref(0)
+
+const hasStatsData = computed(() =>
+  scholarshipCount.value > 0 || unreadCount.value > 0 || pendingCount.value > 0 || eventCount.value > 0
+)
+
+const statsChartRef = ref(null)
+let statsChart = null
 
 const statCards = computed(() => [
   { key: 'scholarship', cls: 'sch', icon: Trophy, value: scholarshipCount.value, label: '我的奖学金', path: '/scholarship', badge: pendingCount.value > 0 ? `${pendingCount.value} 待审` : '' },
@@ -120,7 +138,49 @@ onMounted(async () => {
     unreadCount.value = u.status === 'fulfilled' ? (u.value?.unread ?? u.value?.data?.unread ?? 0) : 0
     eventCount.value = e.status === 'fulfilled' ? (e.value?.data?.total || e.value?.total || events.value.length) : 0
   } catch { loadError.value = true }
-  finally { loading.value = false }
+  finally {
+    loading.value = false
+    await nextTick()
+    renderStatsChart()
+  }
+})
+
+function renderStatsChart() {
+  if (!statsChartRef.value) return
+  statsChart = echarts.init(statsChartRef.value)
+  const categories = ['奖学金', '未读通知', '待审核', '近期活动']
+  const values = [scholarshipCount.value, unreadCount.value, pendingCount.value, eventCount.value]
+  if (values.every(v => v === 0)) return
+  statsChart.setOption({
+    tooltip: { trigger: 'axis' },
+    xAxis: {
+      type: 'value',
+      minInterval: 1,
+      axisLabel: { fontSize: 11 },
+    },
+    yAxis: {
+      type: 'category',
+      data: categories,
+      axisLabel: { fontSize: 12 },
+    },
+    series: [{
+      type: 'bar',
+      data: values.map((v, i) => ({
+        value: v,
+        itemStyle: {
+          color: ['#e6a23c', '#67c23a', '#409eff', '#e91e63'][i],
+          borderRadius: [0, 6, 6, 0],
+        },
+      })),
+      barWidth: '55%',
+      label: { show: true, position: 'right', fontSize: 12 },
+    }],
+    grid: { left: 80, right: 40, top: 10, bottom: 10 },
+  })
+}
+
+onUnmounted(() => {
+  statsChart?.dispose()
 })
 </script>
 

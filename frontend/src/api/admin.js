@@ -68,8 +68,8 @@ export function auditGrantApplication(id, data) {
 }
 
 // ── Work Study ──────────────────────────────────
-export function getWorkStudyPositions() {
-  return api.get('/admin/work-study/positions')
+export function getWorkStudyPositions(params) {
+  return api.get('/admin/work-study/positions', { params })
 }
 
 export function createWorkStudyPosition(data) {
@@ -89,6 +89,10 @@ export function auditWorkStudyApplication(id, data) {
 }
 
 // ── Academic ────────────────────────────────────
+export function getGradesList(params) {
+  return api.get('/admin/grades', { params })
+}
+
 export function importGrades(formData) {
   return api.post('/admin/grades/import', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

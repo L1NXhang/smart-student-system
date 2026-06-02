@@ -108,6 +108,9 @@ router.get('/work-study/applications', adminScholarshipController.getWorkStudyAp
 router.put('/work-study/applications/:id', adminScholarshipController.auditWorkStudyApplication);
 
 // ===== 学业发展管理 =====
+// 获取成绩列表
+router.get('/grades', adminAcademicController.getGradesList);
+
 // 批量导入成绩
 router.post('/grades/import', upload.single('file'), adminAcademicController.importGrades);
 

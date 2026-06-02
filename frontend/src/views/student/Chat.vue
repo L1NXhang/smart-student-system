@@ -79,10 +79,11 @@ function truncate(str, len = 20) {
   return str.length > len ? str.slice(0, len) + '...' : str
 }
 
-function isSelf(msg) {
-  if (!msg) return false
+function getSenderName(msg) {
+  if (isSelf(msg)) return '我'
   const senderId = msg.senderId ?? msg.sender_id
-  return senderId === currentUserId || senderId === 0 || senderId === 'self'
+  const contact = contacts.value.find((c) => c.id === senderId)
+  return contact?.name || activeContact.value?.name || '用户'
 }
 
 function scrollToBottom() {
@@ -501,7 +502,7 @@ onUnmounted(() => {
             class="message-item"
             :class="{ self: isSelf(msg) }"
           >
-            <span v-if="!isSelf(msg)" class="message-sender">{{ activeContact?.name }}</span>
+            <span class="message-sender">{{ getSenderName(msg) }}</span>
             <div class="message-bubble">
               <template v-if="msg.sending">
                 <template v-if="msg.messageType === 'image'">
@@ -644,7 +645,9 @@ onUnmounted(() => {
 
 /* ─── Message Bubble ─── */
 .message-item { display: flex; flex-direction: column; max-width: 70%; }
-.message-sender { font-size: 11px; color: #909399; margin-bottom: 2px; padding-left: 4px; }
+.message-sender { font-size: 11px; color: #909399; margin-bottom: 2px; }
+.message-item:not(.self) .message-sender { padding-left: 4px; }
+.message-item.self .message-sender { padding-right: 4px; color: #409eff; }
 .message-item.self { align-self: flex-end; align-items: flex-end; }
 .message-item:not(.self) { align-self: flex-start; align-items: flex-start; }
 .message-bubble { padding: 10px 16px; border-radius: 12px; word-break: break-word; overflow: hidden; }

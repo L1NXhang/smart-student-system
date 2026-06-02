@@ -107,7 +107,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import gsap from 'gsap'
 import { getScholarshipApplications, auditScholarshipApplication } from '@/api/admin'
@@ -164,15 +164,6 @@ async function loadList() {
     const data = res.data || res
     applications.value = (data.list || []).map(mapApp)
     total.value = data.total || 0
-
-    // Load all status counts
-    const allRes = await getScholarshipApplications({ pageSize: 1 })
-    const allData = allRes.data || allRes
-    if (allData.list) {
-      // We need separate counts per status — just sum from what we have
-      // Actually, let's fetch counts from each tab
-    }
-    // Simple: we'll just use local counts for now
     updateCounts()
   } catch {
     ElMessage.error('加载申请列表失败')

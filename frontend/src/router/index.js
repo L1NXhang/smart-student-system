@@ -206,6 +206,10 @@ const routes = [
         meta: { title: '安全管理' },
       },
       {
+        path: 'academic/exams',
+        redirect: '/admin/exams',
+      },
+      {
         path: 'exams',
         name: 'AdminExams',
         component: () => import('../views/admin/ExamManage.vue'),
@@ -236,18 +240,36 @@ const router = createRouter({
   routes,
 })
 
+// Handle lazy-load chunk errors (e.g. after deployment)
+router.onError((error) => {
+  const pattern = /Failed to fetch dynamically imported module|Failed to load module script|Importing a module script failed/
+  if (pattern.test(error.message)) {
+    window.location.reload()
+  }
+  console.error('Router error:', error)
+})
+
 router.beforeEach((to, from, next) => {
   const token = getToken()
+  const user = getUser()
+  const isAdmin = user?.role === 'admin'
+
   if (to.meta.guest) {
     if (token) {
-      // 根据角色跳转到对应首页
-      const user = getUser()
-      const isAdmin = user?.role === 'admin'
       return next(isAdmin ? '/admin/dashboard' : '/dashboard')
     }
     return next()
   }
   if (!token) return next('/login')
+
+  // 角色路由保护
+  if (to.path.startsWith('/admin') && !isAdmin) {
+    return next('/dashboard')
+  }
+  if (!to.path.startsWith('/admin') && isAdmin && !to.path.startsWith('/message/chat') && !to.path.startsWith('/change-password')) {
+    return next('/admin/dashboard')
+  }
+
   next()
 })
 

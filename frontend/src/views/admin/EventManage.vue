@@ -162,7 +162,7 @@ const rules = {
 const eventList = ref([])
 const canPublish = computed(() => userStore.isAdmin || userStore.isDepartmentHead)
 
-const typeLabelMap = { academic: '学术讲座', sports: '文体活动', volunteer: '志愿服务', culture: '社团活动', other: '其他' }
+const typeLabelMap = { academic: '学术讲座', sports: '文体活动', volunteer: '志愿服务', competition: '学科竞赛', culture: '社团活动', other: '其他' }
 
 function formatDate(d) {
   if (!d) return ''
@@ -254,9 +254,9 @@ async function submitForm() {
   const f = dialog.form
   const data = {
     title: f.title,
-    eventType: f.type === '学术讲座' ? 'academic' : f.type === '文体活动' ? 'sports' : f.type === '志愿服务' ? 'volunteer' : f.type === '学科竞赛' ? 'academic' : f.type === '社团活动' ? 'culture' : f.type,
-    hoursType: f.hoursType || null,
-    eventDate: f.eventTime,
+    event_type: f.type === '学术讲座' ? 'academic' : f.type === '文体活动' ? 'sports' : f.type === '志愿服务' ? 'volunteer' : f.type === '学科竞赛' ? 'competition' : f.type === '社团活动' ? 'culture' : f.type,
+    hours_type: f.hoursType || null,
+    event_date: f.eventTime,
     location: f.location,
     description: f.description,
     quota: f.quota,
@@ -296,7 +296,7 @@ async function viewRegistrants(row) {
   registrantsDialog.event = row
   try {
     const res = await getEventRegistrations(row.id)
-    registrantsDialog.list = (res.list || []).map(r => ({
+    registrantsDialog.list = (res.data?.list || res.list || []).map(r => ({
       name: r.user?.name || r.student_name || '未知',
       studentId: r.user?.username || r.student_username || '',
       className: r.student?.className || r.student?.class_name || '',

@@ -170,9 +170,9 @@ async function submit() {
   submitting.value = true
   try {
     await createAppointment({
-      appointmentDate: form.value.appointmentDate,
-      appointmentTime: form.value.appointmentTime,
-      reason: form.value.reason,
+      appointmentDate: form.appointmentDate,
+      appointmentTime: form.appointmentTime,
+      reason: form.reason,
     })
     ElMessage.success('预约已提交，请等待确认')
     resetForm()

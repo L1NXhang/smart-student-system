@@ -168,9 +168,9 @@ async function submit() {
   submitting.value = true
   try {
     await submitLateReturn({
-      returnDate: form.value.returnDate,
-      expectedTime: form.value.expectedTime,
-      reason: form.value.reason,
+      returnDate: form.returnDate,
+      expectedTime: form.expectedTime,
+      reason: form.reason,
     })
     ElMessage.success('晚归登记已提交')
     resetForm()

@@ -290,11 +290,58 @@ const auditAward = async (req, res) => {
   }
 };
 
+// 获取成绩列表（管理员）
+const getGradesList = async (req, res) => {
+  try {
+    const { semester, keyword, page = 1, pageSize = 10 } = req.query;
+
+    let whereClause = '1=1';
+    const params = [];
+
+    if (semester) {
+      whereClause += ' AND g.semester = ?';
+      params.push(semester);
+    }
+
+    if (keyword) {
+      whereClause += ' AND (u.name LIKE ? OR u.username LIKE ?)';
+      params.push(`%${keyword}%`, `%${keyword}%`);
+    }
+
+    const countResult = await sequelize.query(
+      `SELECT COUNT(*) as total FROM grades g
+       LEFT JOIN student_info s ON g.student_id = s.id
+       LEFT JOIN users u ON s.user_id = u.id
+       WHERE ${whereClause}`,
+      { replacements: params, type: sequelize.QueryTypes.SELECT }
+    );
+    const total = countResult[0].total;
+
+    const offset = (parseInt(page) - 1) * parseInt(pageSize);
+    const list = await sequelize.query(
+      `SELECT g.*, u.name as student_name, u.username as student_username
+       FROM grades g
+       LEFT JOIN student_info s ON g.student_id = s.id
+       LEFT JOIN users u ON s.user_id = u.id
+       WHERE ${whereClause}
+       ORDER BY g.created_at DESC
+       LIMIT ? OFFSET ?`,
+      { replacements: [...params, parseInt(pageSize), offset], type: sequelize.QueryTypes.SELECT }
+    );
+
+    return paginate(res, list, total, parseInt(page), parseInt(pageSize));
+  } catch (err) {
+    console.error('获取成绩列表错误:', err);
+    return error(res, '获取成绩列表失败', 500);
+  }
+};
+
 module.exports = {
   importGrades,
   importSecondClassroom,
   getMidtermEvaluations,
   auditMidtermEvaluation,
   getAwards,
-  auditAward
+  auditAward,
+  getGradesList,
 };
