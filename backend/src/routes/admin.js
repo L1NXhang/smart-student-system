@@ -1,12 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
 const adminStudentController = require('../controllers/adminStudentController');
 const adminScholarshipController = require('../controllers/adminScholarshipController');
 const adminAcademicController = require('../controllers/adminAcademicController');
 const adminCareerController = require('../controllers/adminCareerController');
 const { authMiddleware, adminMiddleware } = require('../middlewares/auth');
+const { makeUploader } = require('../middlewares/upload');
 const { sequelize } = require('../models');
 const { success, error } = require('../utils/response');
 
@@ -29,18 +28,8 @@ router.get('/dashboard/stats', authMiddleware, adminMiddleware, async (req, res)
   } catch (e) { return error(res, e.message, 500); }
 });
 
-// 配置文件上传
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../../uploads'));
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ storage });
+// 配置文件上传(使用共享白名单 uploader,Excel 等会受 fileFilter 校验)
+const upload = makeUploader({ maxSizeMB: 10 });
 
 // 所有管理员路由都需要认证和管理员权限
 router.use(authMiddleware, adminMiddleware);
