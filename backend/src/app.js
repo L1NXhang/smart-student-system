@@ -34,6 +34,18 @@ const app = express()
 const server = http.createServer(app)
 const PORT = process.env.PORT || 3000
 
+// 处理端口被占用等 listen 错误，避免进程崩溃
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`FATAL: 端口 ${PORT} 已被占用，请检查是否有其他实例在运行`)
+    console.error('  查看: ss -tlnp | grep ' + PORT)
+    console.error('  杀掉: fuser -k ' + PORT + '/tcp   (需要 sudo)')
+    process.exit(1)
+  }
+  console.error('Server error:', err)
+  process.exit(1)
+})
+
 // ====== 安全中间件 ======
 app.use(helmet({
   contentSecurityPolicy: false, // SPA 需要内联脚本

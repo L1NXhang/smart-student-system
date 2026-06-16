@@ -13,7 +13,6 @@ const sequelize = new Sequelize(
     collate: 'utf8mb4_unicode_ci',
     dialectOptions: {
       charset: 'utf8mb4',
-      collation: 'utf8mb4_unicode_ci',
     },
     define: {
       charset: 'utf8mb4',
