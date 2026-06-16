@@ -83,7 +83,7 @@
         </span>
       </div>
       <el-divider />
-      <div class="detail-body" v-html="detail.content || detail.description || '暂无详细内容'" />
+      <div class="detail-body" v-html="sanitizeHtml(detail.content || detail.description || '暂无详细内容')" />
       <template #footer>
         <el-button @click="showDialog = false">关闭</el-button>
         <el-button type="warning" @click="toggleFav(detail)" :icon="detail.is_favorite ? StarFilled : Star">
@@ -100,6 +100,7 @@ import { ElMessage } from 'element-plus'
 import { Search, Star, StarFilled, View } from '@element-plus/icons-vue'
 import { getJobInfos, getJobInfo, favoriteJob } from '@/api/career'
 import { FadeContent, GradientText } from '@/components/react-bits'
+import { sanitizeHtml } from '@/utils/sanitize'
 
 const list = ref([])
 const loading = ref(false)

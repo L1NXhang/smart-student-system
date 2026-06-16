@@ -54,7 +54,7 @@
     </el-card>
 
     <el-dialog v-model="showDialog" :title="detail.title" width="640px" @opened="markRead(detail.id)">
-      <div class="detail-content" v-html="detail.content" />
+      <div class="detail-content" v-html="sanitizeHtml(detail.content)" />
       <el-divider />
       <p class="detail-footer">
         {{ detail.created_at || detail.createdAt }}
@@ -74,6 +74,7 @@
 import { ref, onMounted } from 'vue'
 import { getAnnouncements, getAnnouncement, markAnnouncementRead, getUnreadAnnounceCount } from '@/api/message'
 import { FadeContent, GradientText } from '@/components/react-bits'
+import { sanitizeHtml } from '@/utils/sanitize'
 
 const tab = ref('all')
 const list = ref([])

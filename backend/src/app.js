@@ -47,9 +47,30 @@ server.on('error', (err) => {
 })
 
 // ====== 安全中间件 ======
+// CSP 配置：
+// - script-src 'self' 禁止内联脚本（防 XSS 后门执行）
+// - style-src 'self' 'unsafe-inline' 允许内联样式（Vue scoped style 用）
+// - img-src 'self' data: blob: 允许内联和 blob 图片（聊天附件、avatar 用）
+// - connect-src 'self' wss: ws: 允许 WebSocket（socket.io）
+// - frame-ancestors 'none' 防 clickjacking
+// 注：Vue 3 + Vite 默认所有脚本都走 'self'，不需要 inline script
 app.use(helmet({
-  contentSecurityPolicy: false, // SPA 需要内联脚本
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:", "https:"],
+      connectSrc: ["'self'", "ws:", "wss:"],
+      fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+    },
+  },
   crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" },
 }))
 
 // 全局限流

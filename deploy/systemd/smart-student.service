@@ -1,0 +1,25 @@
+[Unit]
+Description=Smart Student System Backend
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/smart-student-system/backend
+EnvironmentFile=/home/ubuntu/smart-student-system/backend/.env
+ExecStart=/usr/bin/node src/app.js
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# 安全加固（推荐）
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/ubuntu/smart-student-system/backend/uploads
+
+[Install]
+WantedBy=multi-user.target
