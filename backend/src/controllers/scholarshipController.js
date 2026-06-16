@@ -1,5 +1,6 @@
 const { StudentInfo, User, sequelize } = require('../models');
 const { success, error, paginate } = require('../utils/response');
+const { getCachedStudentInfo } = require('../utils/getStudentInfo');
 const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, AlignmentType, BorderStyle, WidthType } = require('docx');
 
 // 提交奖学金申请
@@ -8,7 +9,7 @@ const submitScholarshipApplication = async (req, res) => {
     const userId = req.user.id;
     const { scholarshipType, reason, materials, gpa, ranking, awardsSummary, conductScore, conductScoreDetail, templateData } = req.body;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }
@@ -56,9 +57,9 @@ const getMyScholarshipApplications = async (req, res) => {
     const userId = req.user.id;
     const { status, page = 1, pageSize = 10 } = req.query;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
-      return error(res, '学生信息不存在', 404);
+      return res.json({ code: 200, message: '获取成功', data: { list: [], total: 0, page: 1, pageSize: 10 } });
     }
 
     let whereClause = 'student_id = ?';
@@ -113,7 +114,7 @@ const submitGrantApplication = async (req, res) => {
     const userId = req.user.id;
     const { grantType, reason, materials } = req.body;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }
@@ -155,7 +156,7 @@ const getMyGrantApplications = async (req, res) => {
     const userId = req.user.id;
     const { status, page = 1, pageSize = 10 } = req.query;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }
@@ -276,7 +277,7 @@ const applyWorkStudyPosition = async (req, res) => {
     const userId = req.user.id;
     const { positionId, reason } = req.body;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }
@@ -344,7 +345,7 @@ const getMyWorkStudyApplications = async (req, res) => {
     const userId = req.user.id;
     const { status, page = 1, pageSize = 10 } = req.query;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }

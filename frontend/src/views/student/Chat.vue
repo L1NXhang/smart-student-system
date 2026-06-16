@@ -80,8 +80,9 @@ function scrollToBottom() {
 async function loadContacts() {
   try {
     const res = await getContacts()
-    contacts.value = res.data?.rows || res.data || []
+    contacts.value = res.data?.contacts || res.contacts || []
   } catch {
+    contacts.value = []
     ElMessage.error('加载联系人失败')
   }
 }
@@ -238,7 +239,7 @@ onMounted(async () => {
   }
 
   // ─── WebSocket ───────────────────────────────────────────────
-  socket = io('http://localhost:3000', {
+  socket = io('/', {
     auth: { token: getToken() },
     transports: ['websocket', 'polling'],
   })

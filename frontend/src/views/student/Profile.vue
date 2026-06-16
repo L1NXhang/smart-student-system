@@ -160,13 +160,73 @@
               <el-input v-model="form.classTeacherPhone" :disabled="!editing" />
             </el-form-item>
           </el-col>
-          <el-col :xs="24" :sm="12" v-for="(m, i) in form.familyMembers" :key="i">
-            <el-form-item :label="m.relation || m.memberType">
-              <el-input v-model="m.name" :disabled="!editing" :placeholder="'姓名'" style="width:40%;margin-right:8px" />
-              <el-input v-model="m.phone" :disabled="!editing" placeholder="电话" style="width:55%" />
-            </el-form-item>
-          </el-col>
         </el-row>
+
+        <el-divider />
+
+        <!-- 家庭情况 -->
+        <h3 class="section-title">家庭情况</h3>
+        <div class="family-section">
+          <div v-for="(m, i) in form.familyMembers" :key="'fam'+i" class="family-row">
+            <el-row :gutter="12">
+              <el-col :xs="24" :sm="6">
+                <el-form-item :label="'关系'">
+                  <el-input v-model="m.relation" :disabled="!editing" placeholder="如：父亲" />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="8">
+                <el-form-item :label="'姓名'">
+                  <el-input v-model="m.name" :disabled="!editing" placeholder="姓名" />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="8">
+                <el-form-item :label="'联系电话'">
+                  <el-input v-model="m.phone" :disabled="!editing" placeholder="手机号码" />
+                </el-form-item>
+              </el-col>
+              <el-col v-if="editing" :xs="2" :sm="2" style="display:flex;align-items:center;justify-content:center">
+                <el-button type="danger" :icon="Delete" circle size="small" @click="removeFamilyMember(i)" />
+              </el-col>
+            </el-row>
+          </div>
+          <el-button v-if="editing" type="primary" plain size="small" @click="addFamilyMember" style="margin-top:8px">
+            <el-icon><Plus /></el-icon> 添加家庭成员
+          </el-button>
+          <span v-if="!form.familyMembers.length && !editing" style="color:#c0c4cc;font-size:13px">暂无家庭信息</span>
+        </div>
+
+        <el-divider />
+
+        <!-- 紧急联系人 -->
+        <h3 class="section-title">紧急联系人（不少于2位）</h3>
+        <div class="family-section">
+          <div v-for="(c, i) in form.emergencyContacts" :key="'em'+i" class="family-row">
+            <el-row :gutter="12">
+              <el-col :xs="24" :sm="6">
+                <el-form-item :label="'关系'">
+                  <el-input v-model="c.relation" :disabled="!editing" placeholder="如：母亲" />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="8">
+                <el-form-item :label="'姓名'">
+                  <el-input v-model="c.name" :disabled="!editing" placeholder="姓名" />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="8">
+                <el-form-item :label="'联系电话'">
+                  <el-input v-model="c.phone" :disabled="!editing" placeholder="手机号码" />
+                </el-form-item>
+              </el-col>
+              <el-col v-if="editing" :xs="2" :sm="2" style="display:flex;align-items:center;justify-content:center">
+                <el-button type="danger" :icon="Delete" circle size="small" @click="removeEmergContact(i)" />
+              </el-col>
+            </el-row>
+          </div>
+          <el-button v-if="editing" type="primary" plain size="small" @click="addEmergContact" style="margin-top:8px">
+            <el-icon><Plus /></el-icon> 添加紧急联系人
+          </el-button>
+          <span v-if="!form.emergencyContacts.length && !editing" style="color:#c0c4cc;font-size:13px">暂无紧急联系人，请及时补充</span>
+        </div>
 
         <el-divider />
 
@@ -200,6 +260,7 @@
         <!-- 操作按钮 -->
         <div class="form-actions" v-if="!editing">
           <el-button type="primary" size="large" @click="startEdit">编辑信息</el-button>
+          <el-button size="large" @click="handleExport">导出个人信息</el-button>
         </div>
         <div class="form-actions" v-else>
           <el-button size="large" @click="cancelEdit">取消</el-button>
@@ -245,11 +306,12 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { UserFilled } from '@element-plus/icons-vue'
-import { Reveal, GradientText, StarBorder } from '@/components/react-bits'
+import { UserFilled, Plus, Delete } from '@element-plus/icons-vue'
+import { Reveal, GradientText } from '@/components/react-bits'
 import {
   getStudentInfo, uploadPhoto, batchSubmitInfoChange,
   updateStudentInfo, submitDifficultyApplication,
+  saveFamilyInfo, saveEmergencyContacts, exportStudentInfo,
 } from '@/api/student'
 
 const formRef = ref(null)
@@ -257,7 +319,6 @@ const loading = ref(true)
 const editing = ref(false)
 const submitting = ref(false)
 
-// Store original values for diff
 const originalForm = ref({})
 
 const form = reactive({
@@ -283,6 +344,7 @@ const form = reactive({
   difficultyLevel: '',
   difficultyMaterial: '',
   familyMembers: [],
+  emergencyContacts: [],
 })
 
 const rules = {
@@ -293,7 +355,6 @@ const rules = {
   ],
 }
 
-// Difficulty form
 const showDifficultyForm = ref(false)
 const diffSubmitting = ref(false)
 const diffForm = reactive({ level: '', reason: '', files: [] })
@@ -332,9 +393,10 @@ async function fetchInfo() {
       classTeacherPhone: data.classTeacherPhone || data.class_teacher_phone || '',
       difficultyLevel: data.difficultyLevel || data.difficulty_level || '',
       difficultyMaterial: data.difficultyMaterial || data.difficulty_material || '',
-      familyMembers: data.familyInfo || data.familyMembers || [],
+      familyMembers: (data.familyInfo || []).map(m => ({ ...m })),
+      emergencyContacts: (data.emergencyContacts || []).map(c => ({ ...c })),
     })
-    originalForm.value = { ...form }
+    originalForm.value = { ...form, familyMembers: form.familyMembers.map(m => ({ ...m })), emergencyContacts: form.emergencyContacts.map(c => ({ ...c })) }
   } catch {
     /* handled by interceptor */
   } finally {
@@ -343,13 +405,31 @@ async function fetchInfo() {
 }
 
 function startEdit() {
-  originalForm.value = { ...form }
+  originalForm.value = { ...form, familyMembers: form.familyMembers.map(m => ({ ...m })), emergencyContacts: form.emergencyContacts.map(c => ({ ...c })) }
   editing.value = true
 }
 
 function cancelEdit() {
   Object.assign(form, originalForm.value)
+  form.familyMembers = originalForm.value.familyMembers.map(m => ({ ...m }))
+  form.emergencyContacts = originalForm.value.emergencyContacts.map(c => ({ ...c }))
   editing.value = false
+}
+
+function addFamilyMember() {
+  form.familyMembers.push({ memberType: 'parent', relation: '', name: '', phone: '' })
+}
+
+function removeFamilyMember(i) {
+  form.familyMembers.splice(i, 1)
+}
+
+function addEmergContact() {
+  form.emergencyContacts.push({ relation: '', name: '', phone: '' })
+}
+
+function removeEmergContact(i) {
+  form.emergencyContacts.splice(i, 1)
 }
 
 async function handlePhotoUpload(file) {
@@ -366,7 +446,7 @@ async function handlePhotoUpload(file) {
   } catch {
     /* handled by interceptor */
   }
-  return false // prevent default upload
+  return false
 }
 
 async function submitAll() {
@@ -375,43 +455,43 @@ async function submitAll() {
 
   submitting.value = true
   try {
-    // Collect changes
     const changes = []
     const directUpdates = {}
 
     for (const key of Object.keys(form)) {
-      if (['name', 'username', 'photo', 'difficultyLevel', 'difficultyMaterial', 'familyMembers'].includes(key)) continue
+      if (['name', 'username', 'photo', 'difficultyLevel', 'difficultyMaterial', 'familyMembers', 'emergencyContacts'].includes(key)) continue
       const oldVal = originalForm.value[key]
       const newVal = form[key]
       if (newVal !== oldVal && newVal) {
         if (reviewFields.includes(key)) {
-          changes.push({
-            fieldLabel: getFieldLabel(key),
-            fieldName: key,
-            oldValue: oldVal || '',
-            newValue: newVal,
-            reason: '学生自行修改',
-          })
+          changes.push({ fieldLabel: getFieldLabel(key), fieldName: key, oldValue: oldVal || '', newValue: newVal, reason: '学生自行修改' })
         } else {
           directUpdates[key] = newVal
         }
       }
     }
 
-    // Submit direct updates (personal fields)
-    if (Object.keys(directUpdates).length) {
-      await updateStudentInfo(directUpdates)
+    // Save family info if changed
+    const famChanged = JSON.stringify(form.familyMembers) !== JSON.stringify(originalForm.value.familyMembers)
+    if (famChanged) {
+      await saveFamilyInfo({ members: form.familyMembers.filter(m => m.name && m.phone) })
     }
 
-    // Submit changes for admin review
-    if (changes.length) {
-      await batchSubmitInfoChange({ changes })
+    // Save emergency contacts if changed
+    const emChanged = JSON.stringify(form.emergencyContacts) !== JSON.stringify(originalForm.value.emergencyContacts)
+    if (emChanged) {
+      await saveEmergencyContacts({ contacts: form.emergencyContacts.filter(c => c.name && c.phone) })
     }
 
-    const msg = changes.length
-      ? `已提交 ${changes.length} 项修改（其中需审核 ${changes.length} 项），请等待管理员审核`
-      : '信息已更新'
-    ElMessage.success(msg)
+    if (Object.keys(directUpdates).length) await updateStudentInfo(directUpdates)
+    if (changes.length) await batchSubmitInfoChange({ changes })
+
+    const parts = []
+    if (Object.keys(directUpdates).length) parts.push(`${Object.keys(directUpdates).length} 项直接更新`)
+    if (changes.length) parts.push(`${changes.length} 项需审核`)
+    if (famChanged) parts.push('家庭信息已保存')
+    if (emChanged) parts.push('紧急联系人已保存')
+    ElMessage.success(parts.length ? parts.join('，') : '无变更')
     editing.value = false
     await fetchInfo()
   } catch {
@@ -452,84 +532,52 @@ async function submitDifficulty() {
   }
 }
 
+async function handleExport() {
+  try {
+    const res = await exportStudentInfo()
+    const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `学生信息_${form.name}_${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+    ElMessage.success('导出成功')
+  } catch {
+    ElMessage.error('导出失败')
+  }
+}
+
 onMounted(() => {
   fetchInfo()
 })
 </script>
 
 <style scoped>
-.profile-page {
-  max-width: 100%;
-}
-
+.profile-page { max-width: 100%; }
 .profile-body {
   background: #fff;
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
-
-.profile-form {
-  max-width: 900px;
-}
-
-/* Photo */
-.photo-section {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 8px;
-}
-
-.photo-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-.id-photo {
-  border: 2px solid var(--el-border-color);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.photo-hint {
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-}
-
-.photo-upload {
-  margin-top: 4px;
-}
-
-/* Section title */
+.profile-form { max-width: 900px; }
+.photo-section { display: flex; justify-content: center; margin-bottom: 8px; }
+.photo-wrapper { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.id-photo { border: 2px solid var(--el-border-color); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+.photo-hint { font-size: 12px; color: var(--el-text-color-secondary); }
+.photo-upload { margin-top: 4px; }
 .section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--el-color-primary);
-  margin: 0 0 12px 0;
-  padding-left: 10px;
-  border-left: 3px solid var(--el-color-primary);
+  font-size: 16px; font-weight: 600; color: var(--el-color-primary);
+  margin: 0 0 12px 0; padding-left: 10px; border-left: 3px solid var(--el-color-primary);
 }
-
-/* Review badge */
-.review-badge {
-  margin-left: 8px;
-  vertical-align: middle;
-}
-
-/* Actions */
+.review-badge { margin-left: 8px; vertical-align: middle; }
+.family-section { padding-left: 10px; }
+.family-row { padding: 8px 0; border-bottom: 1px dashed #f0f0f0; }
+.family-row:last-child { border-bottom: none; }
 .form-actions {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  margin-top: 32px;
-  padding-top: 24px;
-  border-top: 1px solid var(--el-border-color-lighter);
+  display: flex; justify-content: center; gap: 16px;
+  margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--el-border-color-lighter);
 }
-
-@media (max-width: 768px) {
-  .profile-body {
-    padding: 16px;
-  }
-}
+@media (max-width: 768px) { .profile-body { padding: 16px; } }
 </style>

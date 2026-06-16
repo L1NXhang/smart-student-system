@@ -80,7 +80,9 @@
             {{ row.review_comment || '-' }}
           </template>
         </el-table-column>
-        <el-table-column prop="created_at" label="提交时间" width="160" />
+        <el-table-column label="提交时间" width="160">
+          <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="80" fixed="right">
           <template #default="{ row }">
             <el-popconfirm
@@ -140,6 +142,12 @@ function statusTag(status) {
 function statusText(status) {
   const map = { pending: '待审核', approved: '已通过', rejected: '已拒绝', cancelled: '已取消' }
   return map[status] || status
+}
+function formatTime(d) {
+  if (!d) return ''
+  const t = new Date(d)
+  const pad = n => String(n).padStart(2, '0')
+  return t.getFullYear() + '-' + pad(t.getMonth() + 1) + '-' + pad(t.getDate()) + ' ' + pad(t.getHours()) + ':' + pad(t.getMinutes())
 }
 
 async function fetchRecords() {

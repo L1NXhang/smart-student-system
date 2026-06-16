@@ -1,9 +1,10 @@
 const { Feedback, User, StudentInfo } = require('../models')
 const { success, error } = require('../utils/response')
+const { getCachedStudentInfo } = require('../utils/getStudentInfo')
 
 exports.submitFeedback = async (req, res) => {
   try {
-    const student = await StudentInfo.findOne({ where: { user_id: req.user.id } })
+    const student = await getCachedStudentInfo(req)
     if (!student) return error(res, '学生信息不存在', 404)
     const feedback = await Feedback.create({
       student_id: student.id,
@@ -18,7 +19,7 @@ exports.submitFeedback = async (req, res) => {
 
 exports.getMyFeedbacks = async (req, res) => {
   try {
-    const student = await StudentInfo.findOne({ where: { user_id: req.user.id } })
+    const student = await getCachedStudentInfo(req)
     if (!student) return error(res, '学生信息不存在', 404)
     const list = await Feedback.findAll({ where: { student_id: student.id }, order: [['created_at', 'DESC']] })
     return success(res, list)

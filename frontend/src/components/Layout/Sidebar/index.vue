@@ -1,21 +1,27 @@
 <template>
-  <aside class="sidebar" :class="{ collapsed }" ref="sidebarRef">
-    <div class="sidebar-logo" @click="emit('toggle')">
+  <aside class="sidebar" :class="{ collapsed, 'is-mobile': isMobile }" ref="sidebarRef">
+    <div class="sidebar-logo" @click="isMobile ? emit('close') : emit('toggle')">
       <span class="logo-icon">&#x1F393;</span>
       <Transition name="fade">
-        <span v-show="!collapsed" class="logo-text">智慧学工</span>
+        <span v-show="!collapsed || isMobile" class="logo-text">智慧学工</span>
       </Transition>
     </div>
+
+    <!-- 移动端关闭按钮 -->
+    <button v-if="isMobile && !collapsed" class="mobile-close-btn" @click="emit('close')">
+      <el-icon :size="18"><Close /></el-icon>
+    </button>
 
     <el-menu
       :default-active="activeMenu"
       :default-openeds="defaultOpeneds"
-      :collapse="collapsed"
+      :collapse="!isMobile && collapsed"
       :router="true"
       class="sidebar-menu"
       background-color="#304156"
       text-color="#bfcbd9"
       active-text-color="#409EFF"
+      @select="onMenuSelect"
     >
       <!-- ========== Student Menus ========== -->
       <template v-if="!isAdmin">
@@ -35,6 +41,7 @@
             <span>奖助服务</span>
           </template>
           <el-menu-item index="/scholarship">奖学金申请</el-menu-item>
+          <el-menu-item index="/scholarship/grant">助学金申请</el-menu-item>
           <el-menu-item index="/work-study">勤工助学</el-menu-item>
         </el-sub-menu>
 
@@ -46,6 +53,8 @@
           <el-menu-item index="/academic/grades">成绩查询</el-menu-item>
           <el-menu-item index="/academic/evaluation">中期鉴定</el-menu-item>
           <el-menu-item index="/academic/second-classroom">第二课堂</el-menu-item>
+          <el-menu-item index="/academic/awards">获奖记录</el-menu-item>
+          <el-menu-item index="/academic/disciplinary">违纪查询</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="career-group">
@@ -66,6 +75,7 @@
           <el-menu-item index="/safety/late-return">晚归登记</el-menu-item>
           <el-menu-item index="/safety/leave">外出报备</el-menu-item>
           <el-menu-item index="/safety/exam">安全考试</el-menu-item>
+          <el-menu-item index="/safety/incident">异常上报</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="message-group">
@@ -73,7 +83,7 @@
             <el-icon><ChatDotRound /></el-icon>
             <span>沟通互动</span>
           </template>
-          <el-menu-item index="/message/chat">班任留言</el-menu-item>
+          <el-menu-item index="/message/chat">聊天室</el-menu-item>
           <el-menu-item index="/message/notice">公告通知</el-menu-item>
           <el-menu-item index="/message/feedback">意见反馈</el-menu-item>
           <el-menu-item index="/message/events">活动报名</el-menu-item>
@@ -132,7 +142,7 @@
 
         <el-menu-item index="/message/chat">
           <el-icon><ChatDotRound /></el-icon>
-          <span>班任留言</span>
+          <span>聊天室</span>
         </el-menu-item>
       </template>
     </el-menu>
@@ -145,18 +155,16 @@ import { useRoute } from 'vue-router'
 import gsap from 'gsap'
 import {
   Odometer, User, Money, Reading, Aim, Lock, ChatDotRound,
-  UserFilled, DocumentChecked, Briefcase, DataAnalysis, Bell, Calendar,
+  UserFilled, DocumentChecked, Briefcase, DataAnalysis, Bell, Calendar, Close,
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'
 
-defineProps({
-  collapsed: {
-    type: Boolean,
-    default: false,
-  },
+const props = defineProps({
+  collapsed: { type: Boolean, default: false },
+  isMobile: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['toggle'])
+const emit = defineEmits(['toggle', 'close'])
 
 const route = useRoute()
 const userStore = useUserStore()
@@ -184,6 +192,10 @@ const defaultOpeneds = computed(() => {
 })
 
 let menuTween
+
+function onMenuSelect() {
+  if (props.isMobile) emit('close')
+}
 
 onMounted(async () => {
   await nextTick()
@@ -257,15 +269,40 @@ onBeforeUnmount(() => {
   width: var(--sidebar-width, 220px);
 }
 
-@media (max-width: 768px) {
+.mobile-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: rgba(255,255,255,0.1);
+  color: #bfcbd9;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+}
+.mobile-close-btn:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+@media (max-width: 767px) {
   .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 240px !important;
     transform: translateX(-100%);
-    width: 220px !important;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1100;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.3);
   }
   .sidebar:not(.collapsed) {
     transform: translateX(0);
-    box-shadow: 4px 0 20px rgba(0,0,0,0.3);
   }
 }
 </style>

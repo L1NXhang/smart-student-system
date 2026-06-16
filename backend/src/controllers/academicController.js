@@ -1,5 +1,6 @@
 const { StudentInfo, sequelize } = require('../models');
 const { success, error, paginate } = require('../utils/response');
+const { getCachedStudentInfo } = require('../utils/getStudentInfo');
 
 // 获取成绩列表
 const getGrades = async (req, res) => {
@@ -7,7 +8,7 @@ const getGrades = async (req, res) => {
     const userId = req.user.id;
     const { semester, page = 1, pageSize = 10 } = req.query;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }
@@ -65,7 +66,7 @@ const getGradeStatistics = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }
@@ -96,7 +97,7 @@ const getAwards = async (req, res) => {
     const userId = req.user.id;
     const { page = 1, pageSize = 10 } = req.query;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }
@@ -135,7 +136,7 @@ const submitAward = async (req, res) => {
     const { awardName, awardLevel, awardType, awardDate } = req.body;
     const certificatePath = req.file ? `/uploads/${req.file.filename}` : null;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }
@@ -161,7 +162,7 @@ const getDisciplinaryRecords = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }
@@ -187,7 +188,7 @@ const getSecondClassroom = async (req, res) => {
     const userId = req.user.id;
     const { semester } = req.query;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }
@@ -240,7 +241,7 @@ const getMidtermEvaluation = async (req, res) => {
     const userId = req.user.id;
     const { semester } = req.params;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }
@@ -270,7 +271,7 @@ const submitMidtermEvaluation = async (req, res) => {
     const userId = req.user.id;
     const { semester, moralPerformance, academicPerformance, socialPractice, physicalMental, selfEvaluation } = req.body;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }
@@ -321,7 +322,7 @@ const saveMidtermEvaluationDraft = async (req, res) => {
     const userId = req.user.id;
     const { semester, moralPerformance, academicPerformance, socialPractice, physicalMental, selfEvaluation } = req.body;
 
-    const studentInfo = await StudentInfo.findOne({ where: { userId } });
+    const studentInfo = await getCachedStudentInfo(req);
     if (!studentInfo) {
       return error(res, '学生信息不存在', 404);
     }

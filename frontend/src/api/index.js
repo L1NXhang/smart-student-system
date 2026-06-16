@@ -26,8 +26,9 @@ api.interceptors.response.use(
   (err) => {
     if (err.response?.status === 401) {
       logout()
-      window.location.href = '/login'
-      ElMessage.error('登录已过期，请重新登录')
+      window.location.hash = '#/login'
+      window.location.reload()
+      return Promise.reject(err)
     } else {
       ElMessage.error(err.response?.data?.message || '网络错误')
     }

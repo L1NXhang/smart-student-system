@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import { getToken } from '../utils/auth'
 
 const routes = [
@@ -49,6 +49,12 @@ const routes = [
         meta: { title: '奖学金申请' },
       },
       {
+        path: 'scholarship/grant',
+        name: 'GrantApply',
+        component: () => import('../views/student/GrantApply.vue'),
+        meta: { title: '助学金申请' },
+      },
+      {
         path: 'work-study',
         name: 'WorkStudyList',
         component: () => import('../views/student/WorkStudyList.vue'),
@@ -71,6 +77,18 @@ const routes = [
         name: 'SecondClassroom',
         component: () => import('../views/student/SecondClassroom.vue'),
         meta: { title: '第二课堂' },
+      },
+      {
+        path: 'academic/awards',
+        name: 'Awards',
+        component: () => import('../views/student/Awards.vue'),
+        meta: { title: '获奖记录' },
+      },
+      {
+        path: 'academic/disciplinary',
+        name: 'Disciplinary',
+        component: () => import('../views/student/Disciplinary.vue'),
+        meta: { title: '违纪查询' },
       },
       {
         path: 'career/assessment',
@@ -109,10 +127,16 @@ const routes = [
         meta: { title: '安全考试' },
       },
       {
+        path: 'safety/incident',
+        name: 'IncidentReport',
+        component: () => import('../views/student/IncidentReport.vue'),
+        meta: { title: '异常上报' },
+      },
+      {
         path: 'message/chat',
         name: 'Chat',
         component: () => import('../views/student/Chat.vue'),
-        meta: { title: '班任留言' },
+        meta: { title: '聊天室' },
       },
       {
         path: 'message/notice',
@@ -208,7 +232,7 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes,
 })
 

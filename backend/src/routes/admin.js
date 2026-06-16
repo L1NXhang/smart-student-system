@@ -61,6 +61,12 @@ router.get('/students/:id', adminStudentController.getStudentDetail);
 // 审核学生账号
 router.put('/students/:id/audit', adminStudentController.auditStudent);
 
+// 设置学生部门角色
+router.put('/students/:id/department', adminStudentController.setDepartmentRole);
+
+// 获取部门列表
+router.get('/departments', adminStudentController.getDepartments);
+
 // 获取信息变更申请列表
 router.get('/info-change', adminStudentController.getInfoChangeRequests);
 
@@ -102,6 +108,9 @@ router.get('/work-study/applications', adminScholarshipController.getWorkStudyAp
 router.put('/work-study/applications/:id', adminScholarshipController.auditWorkStudyApplication);
 
 // ===== 学业发展管理 =====
+// 获取成绩列表
+router.get('/grades', adminAcademicController.getGradesList);
+
 // 批量导入成绩
 router.post('/grades/import', upload.single('file'), adminAcademicController.importGrades);
 

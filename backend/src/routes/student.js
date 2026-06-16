@@ -42,4 +42,13 @@ router.post('/difficulty-application', authMiddleware, upload.single('material')
 // 获取困难认定申请状态
 router.get('/difficulty-application', authMiddleware, studentController.getDifficultyApplication);
 
+// 保存家庭信息
+router.put('/family-info', authMiddleware, studentController.saveFamilyInfo);
+
+// 保存紧急联系人
+router.put('/emergency-contacts', authMiddleware, studentController.saveEmergencyContacts);
+
+// 导出学生信息
+router.get('/export', authMiddleware, studentController.exportStudentInfo);
+
 module.exports = router;

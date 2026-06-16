@@ -8,7 +8,8 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
-  threshold: { type: Number, default: 0.15 },
+  threshold: { type: Number, default: 0.1 },
+  rootMargin: { type: String, default: '0px 0px -30px 0px' },
   delay: { type: Number, default: 0 },
   once: { type: Boolean, default: true },
 })
@@ -16,18 +17,20 @@ const props = defineProps({
 const elRef = ref(null)
 const isRevealed = ref(false)
 let observer = null
+let triggered = false
 
 onMounted(() => {
   observer = new IntersectionObserver(
     ([entry]) => {
-      if (entry.isIntersecting) {
+      if (entry.isIntersecting && !triggered) {
+        triggered = props.once
         setTimeout(() => { isRevealed.value = true }, props.delay * 1000)
-        if (props.once) observer?.unobserve(elRef.value!)
-      } else if (!props.once) {
+      } else if (!props.once && !entry.isIntersecting) {
+        triggered = false
         isRevealed.value = false
       }
     },
-    { threshold: props.threshold }
+    { threshold: props.threshold, rootMargin: props.rootMargin }
   )
   if (elRef.value) observer.observe(elRef.value)
 })

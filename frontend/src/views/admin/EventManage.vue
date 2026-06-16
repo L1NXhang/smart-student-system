@@ -67,6 +67,14 @@
             <el-option label="社团活动" value="社团活动" />
           </el-select>
         </el-form-item>
+        <el-form-item label="学时类型" prop="hoursType">
+          <el-select v-model="dialog.form.hoursType" placeholder="请选择学时类型（可选）" clearable style="width: 100%">
+            <el-option label="文体学时" value="文体学时" />
+            <el-option label="思想素质学时" value="思想素质学时" />
+            <el-option label="技能特长学时" value="技能特长学时" />
+            <el-option label="志愿服务学时" value="志愿服务学时" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="活动时间" prop="eventTime">
           <el-date-picker
             v-model="dialog.form.eventTime"
@@ -130,14 +138,17 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import gsap from 'gsap'
 import { FadeContent, GradientText } from '@/components/react-bits'
+import { getEvents, createEvent, updateEvent, deleteEvent, getEventRegistrations } from '@/api/message'
+import { useUserStore } from '@/store/user'
 
+const userStore = useUserStore()
 const pageRef = ref(null)
 const formRef = ref(null)
-let nextId = 6
+const loading = ref(false)
 
 const rules = {
   title: [{ required: true, message: '请输入活动名称', trigger: 'blur' }],
@@ -149,69 +160,39 @@ const rules = {
   deadline: [{ required: true, message: '请选择报名截止时间', trigger: 'change' }],
 }
 
-// --- Mock Data ---
-const eventList = ref([
-  {
-    id: 1,
-    title: '人工智能前沿技术讲座',
-    type: '学术讲座',
-    eventTime: '2026-05-20 14:30',
-    location: '朝阳楼301学术报告厅',
-    description: '特邀四川大学计算机学院教授讲解大语言模型与多模态AI的最新进展。',
-    quota: 150,
-    registered: 128,
-    deadline: '2026-05-19 18:00',
-    status: '报名中',
-  },
-  {
-    id: 2,
-    title: '2026年校园篮球联赛',
-    type: '文体活动',
-    eventTime: '2026-05-25 09:00',
-    location: '一期篮球场',
-    description: '各学院组队参赛，决赛将于6月1日在一期体育馆进行。',
-    quota: 200,
-    registered: 200,
-    deadline: '2026-05-20 12:00',
-    status: '报名中',
-  },
-  {
-    id: 3,
-    title: '社区义务支教志愿者招募',
-    type: '志愿服务',
-    eventTime: '2026-06-01 08:00',
-    location: '南充市顺庆区文华社区',
-    description: '为社区留守儿童提供课业辅导和兴趣培养，服务时长计入志愿四川学时。',
-    quota: 30,
-    registered: 30,
-    deadline: '2026-05-28 23:59',
-    status: '已结束',
-  },
-  {
-    id: 4,
-    title: '第15届大学生程序设计竞赛',
-    type: '学科竞赛',
-    eventTime: '2026-06-10 13:00',
-    location: '理科实验楼A区4楼机房',
-    description: 'ACM赛制，3人组队，限计算机相关专业报名。优胜队伍将代表学校参加省赛。',
-    quota: 60,
-    registered: 45,
-    deadline: '2026-06-05 17:00',
-    status: '报名中',
-  },
-  {
-    id: 5,
-    title: '吉他社"夏夜之声"音乐晚会',
-    type: '社团活动',
-    eventTime: '2026-05-30 19:00',
-    location: '一期操场草坪',
-    description: '吉他社年度音乐晚会，欢迎所有热爱音乐的同学前来参与。现场有互动抽奖环节。',
-    quota: 300,
-    registered: 256,
-    deadline: '2026-05-29 12:00',
-    status: '报名中',
-  },
-])
+const eventList = ref([])
+const canPublish = computed(() => userStore.isAdmin || userStore.isDepartmentHead)
+
+const typeLabelMap = { academic: '学术讲座', sports: '文体活动', volunteer: '志愿服务', culture: '社团活动', other: '其他' }
+
+function formatDate(d) {
+  if (!d) return ''
+  const t = new Date(d)
+  const pad = n => String(n).padStart(2, '0')
+  return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())} ${pad(t.getHours())}:${pad(t.getMinutes())}`
+}
+
+async function fetchEvents() {
+  loading.value = true
+  try {
+    const res = await getEvents({ page: 1, pageSize: 50 })
+    eventList.value = (res.data?.list || res.list || []).map(e => ({
+      id: e.id,
+      title: e.title,
+      type: typeLabelMap[e.event_type] || '其他',
+      hoursType: e.hours_type || '',
+      eventTime: formatDate(e.event_date),
+      location: e.location || '',
+      description: e.description || '',
+      quota: e.quota || 0,
+      registered: e.registrationCount || 0,
+      deadline: formatDate(e.deadline),
+      status: e.status === 0 ? '已取消' : '报名中',
+    }))
+  } catch (e) {
+    ElMessage.error('加载活动列表失败')
+  } finally { loading.value = false }
+}
 
 const dialog = reactive({
   visible: false,
@@ -220,6 +201,7 @@ const dialog = reactive({
   form: {
     title: '',
     type: '',
+    hoursType: '',
     eventTime: '',
     location: '',
     description: '',
@@ -250,6 +232,7 @@ function openCreateDialog() {
   dialog.form = {
     title: '',
     type: '',
+    hoursType: '',
     eventTime: '',
     location: '',
     description: '',
@@ -266,70 +249,70 @@ function openEditDialog(row) {
   dialog.visible = true
 }
 
-function submitForm() {
+async function submitForm() {
   if (!formRef.value) return
-  formRef.value.validate((valid) => {
-    if (!valid) return
+  await formRef.value.validate()
+  const f = dialog.form
+  const data = {
+    title: f.title,
+    eventType: f.type === '学术讲座' ? 'academic' : f.type === '文体活动' ? 'sports' : f.type === '志愿服务' ? 'volunteer' : f.type === '学科竞赛' ? 'academic' : f.type === '社团活动' ? 'culture' : f.type,
+    hoursType: f.hoursType || null,
+    eventDate: f.eventTime,
+    location: f.location,
+    description: f.description,
+    quota: f.quota,
+    deadline: f.deadline,
+  }
+  try {
     if (dialog.isEdit) {
-      const target = eventList.value.find((e) => e.id === dialog.editId)
-      if (target) {
-        Object.assign(target, dialog.form)
-      }
-      ElMessage.success('活动已更新（Mock）')
+      await updateEvent(dialog.editId, data)
+      ElMessage.success('活动已更新')
     } else {
-      eventList.value.unshift({
-        id: nextId++,
-        ...dialog.form,
-        registered: 0,
-        status: '报名中',
-      })
-      ElMessage.success('活动发布成功（Mock）')
+      await createEvent(data)
+      ElMessage.success('活动发布成功')
     }
     dialog.visible = false
-  })
-}
-
-function handleCancel(row) {
-  ElMessageBox.confirm(
-    `确认取消活动「${row.title}」？已报名的同学将收到取消通知。`,
-    '取消活动',
-    { confirmButtonText: '确认取消', cancelButtonText: '返回', type: 'warning' }
-  ).then(() => {
-    row.status = '已取消'
-    ElMessage.success('活动已取消（Mock）')
-  })
-}
-
-function viewRegistrants(row) {
-  registrantsDialog.event = row
-  // Generate mock registrants based on actual count
-  const mockNames = ['张明', '李华', '王芳', '赵强', '孙丽', '周杰', '吴敏', '郑伟', '冯雪', '陈龙', '刘洋', '黄玲', '马飞', '林丹', '何超']
-  const mockClasses = [
-    '计算机科学与技术2022级1班',
-    '计算机科学与技术2022级2班',
-    '软件工程2022级1班',
-    '网络工程2022级1班',
-    '数学与应用数学2022级1班',
-    '物理学2022级1班',
-    '电子信息工程2022级1班',
-  ]
-  const list = []
-  const count = Math.min(row.registered, 15)
-  for (let i = 0; i < count; i++) {
-    list.push({
-      name: mockNames[i] || `学生${i + 1}`,
-      studentId: `2022110${String(1001 + i).slice(0, 4)}`,
-      className: mockClasses[i % mockClasses.length],
-      registerTime: `2026-05-${String((i % 18) + 1).padStart(2, '0')} ${String(8 + (i % 14)).padStart(2, '0')}:${String((i * 7) % 60).padStart(2, '0')}`,
-    })
+    await fetchEvents()
+  } catch (e) {
+    ElMessage.error(e.response?.data?.message || '操作失败')
   }
-  registrantsDialog.list = list
+}
+
+async function handleCancel(row) {
+  try {
+    await ElMessageBox.confirm(
+      `确认取消活动「${row.title}」？`,
+      '取消活动',
+      { confirmButtonText: '确认取消', cancelButtonText: '返回', type: 'warning' }
+    )
+    await deleteEvent(row.id)
+    ElMessage.success('活动已取消')
+    await fetchEvents()
+  } catch (e) {
+    if (e !== 'cancel') ElMessage.error(e.response?.data?.message || '取消失败')
+  }
+}
+
+async function viewRegistrants(row) {
+  registrantsDialog.event = row
+  try {
+    const res = await getEventRegistrations(row.id)
+    registrantsDialog.list = (res.list || []).map(r => ({
+      name: r.user?.name || r.student_name || '未知',
+      studentId: r.user?.username || r.student_username || '',
+      className: r.student?.className || r.student?.class_name || '',
+      registerTime: r.created_at || '',
+    }))
+  } catch (e) {
+    registrantsDialog.list = []
+  }
   registrantsDialog.visible = true
 }
 
 // --- GSAP ---
 let ctx
 onMounted(() => {
+  fetchEvents()
   ctx = gsap.context(() => {
     gsap.from('.page-card', {
       y: 40,

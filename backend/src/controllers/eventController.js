@@ -1,5 +1,6 @@
 const { Event, EventRegistration, User, StudentInfo } = require('../models')
 const { success, error } = require('../utils/response')
+const { getCachedStudentInfo } = require('../utils/getStudentInfo')
 
 exports.getEvents = async (req, res) => {
   try {
@@ -39,7 +40,7 @@ exports.register = async (req, res) => {
     if (event.deadline && new Date(event.deadline) < new Date()) return error(res, '报名已截止', 5001)
     const registrations = await EventRegistration.count({ where: { event_id: event.id } })
     if (event.quota && registrations >= event.quota) return error(res, '名额已满', 5002)
-    const student = await StudentInfo.findOne({ where: { user_id: req.user.id } })
+    const student = await getCachedStudentInfo(req)
     if (!student) return error(res, '学生信息不存在', 404)
     const [reg, created] = await EventRegistration.findOrCreate({
       where: { event_id: event.id, student_id: student.id },
@@ -52,7 +53,7 @@ exports.register = async (req, res) => {
 
 exports.cancelRegistration = async (req, res) => {
   try {
-    const student = await StudentInfo.findOne({ where: { user_id: req.user.id } })
+    const student = await getCachedStudentInfo(req)
     if (!student) return error(res, '学生信息不存在', 404)
     const reg = await EventRegistration.findOne({ where: { event_id: req.params.id, student_id: student.id } })
     if (!reg) return error(res, '未报名', 404)
@@ -63,7 +64,7 @@ exports.cancelRegistration = async (req, res) => {
 
 exports.getMyRegistrations = async (req, res) => {
   try {
-    const student = await StudentInfo.findOne({ where: { user_id: req.user.id } })
+    const student = await getCachedStudentInfo(req)
     if (!student) return error(res, '学生信息不存在', 404)
     const list = await EventRegistration.findAll({
       where: { student_id: student.id },
@@ -74,12 +75,19 @@ exports.getMyRegistrations = async (req, res) => {
   } catch (e) { return error(res, e.message, 500) }
 }
 
-// Admin
+// Admin / Department Head
 exports.createEvent = async (req, res) => {
   try {
+    // Permission: admin or department head
+    const user = req.user
+    if (user.role !== 'admin' && user.departmentRole !== 'head') {
+      return error(res, '仅管理员和部门部长可以发布活动', 403)
+    }
+
     const event = await Event.create({
       title: req.body.title,
       event_type: req.body.eventType || req.body.event_type || 'other',
+      hours_type: req.body.hoursType || req.body.hours_type || null,
       event_date: req.body.eventDate || req.body.event_date,
       location: req.body.location,
       description: req.body.description,

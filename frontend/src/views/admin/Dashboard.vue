@@ -16,7 +16,7 @@
             <el-icon :size="24" :color="card.color"><component :is="card.icon" /></el-icon>
           </div>
           <div class="stat-body">
-            <span class="stat-count" :ref="el => countRefs[idx] = el">0</span>
+            <span class="stat-count">{{ card.count }}</span>
             <span class="stat-label">{{ card.label }}</span>
           </div>
         </div>
@@ -83,7 +83,6 @@ import { GridMotionBackground } from '@/components/react-bits'
 const router = useRouter()
 const dashboardRef = ref(null)
 const statRefs = ref([])
-const countRefs = ref([])
 
 const stats = reactive({
   totalStudents: 0, pendingScholarship: 0, pendingInfoChange: 0,
@@ -125,20 +124,10 @@ onMounted(async () => {
     const res = await getDashboardStats()
     if (res.data) Object.assign(stats, res.data)
   } catch { /* handled */ }
-  // GSAP
+  // Card entrance animations
   ctx = gsap.context(() => {
     gsap.from(statRefs.value, { y: 40, autoAlpha: 0, duration: 0.6, stagger: 0.12, ease: 'power3.out' })
     gsap.from('.content-card', { y: 30, autoAlpha: 0, duration: 0.5, stagger: 0.15, ease: 'power2.out', delay: 0.5 })
-    countRefs.value.forEach((el, i) => {
-      if (!el) return
-      const proxy = { value: 0 }
-      gsap.to(proxy, {
-        value: statCards.value[i]?.count || 0,
-        duration: 1.5, delay: 0.3 + i * 0.12, ease: 'power2.out',
-        snap: { value: 1 },
-        onUpdate() { el.textContent = String(Math.round(proxy.value)) },
-      })
-    })
   }, dashboardRef.value)
 })
 
